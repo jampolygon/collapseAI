@@ -384,3 +384,15 @@ strong, b { font-weight: 600; }
 .camera-btn:focus-within .as-button { outline: 2px solid var(--contrast); outline-offset: 4px; }
 .photo { display: block; width: 100%; max-height: 50vh; object-fit: contain; border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface); margin-bottom: 12px; }
 .camera-ask { display: flex; flex-direction: column; gap: 10px; margin-bottom: 12px; }
+
+/* AI benchmark */
+.bench-models { list-style: none; padding: 0; margin: 12px 0; }
+.bench-models li { display: flex; align-items: center; justify-content: space-between; gap: 10px; border-bottom: 1px solid var(--border); }
+.bench-models li .check-item { flex: 1; }
+.bench-models button { min-height: 36px; padding: 4px 10px; }
+.bench-tool .row-actions { display: flex; flex-wrap: wrap; gap: 8px; margin: 12px 0; }
+.bench-table { overflow-x: auto; margin-top: 12px; }
+.bench-table table { width: 100%; border-collapse: collapse; font-size: 14px; }
+.bench-table th, .bench-table td { text-align: left; padding: 8px 6px; border-bottom: 1px solid var(--border); }
+.bench-table tr { cursor: pointer; }
+.bench-answer { border-left: 2px solid var(--border-strong); padding-left: 10px; margin: 10px 0; }

@@ -1,8 +1,9 @@
 import { useEffect, useRef, useState } from 'react';
 import { useLocalState } from '../hooks';
 import { Icon, plainLabel } from '../components/Icon';
+import Bench from './Bench';
 
-export default function Tools() {
+export default function Tools({ onModelChange }: { onModelChange?: () => void }) {
   return (
     <div className="page-content tools-page">
       <header className="page-intro"><span className="eyebrow">Tools / Field utilities</span><h2>Tools for the field.</h2><p>Simple utilities that work on this device.<br />No AI model required.</p></header>
@@ -10,6 +11,7 @@ export default function Tools() {
       <SOS />
       <WaterCalc />
       <GoBag />
+      <Bench onModelChange={onModelChange} />
       </div>
       <div className="planned-tools"><Icon name="compass" size={18} /><span>Offline map</span><span className="muted tiny">Open Map from the navigation to download a prepared region.</span></div>
     </div>
