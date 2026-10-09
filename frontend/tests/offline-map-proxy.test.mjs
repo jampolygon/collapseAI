@@ -148,7 +148,9 @@ test('standalone local maps use frontend public paths with full/range/HEAD and m
     assert.equal((await fetch(`${base}/maps/${filename}`, { headers: { Range: 'bytes=-0' } })).status, 416);
     assert.equal((await fetch(`${base}/maps/absent.pmtiles`)).status, 404);
     const catalog = await (await fetch(`${base}/offline-maps/regions.json`)).json();
-    assert.deepEqual(catalog.regions, []);
+    // the committed catalog lists the bundled regions, each served from ./maps/ on the same origin
+    assert.ok(Array.isArray(catalog.regions));
+    for (const region of catalog.regions) assert.match(region.pmtilesUrl, /^\.\/maps\/[a-z0-9-]+\.pmtiles$/);
   } finally {
     await unlink(file);
   }

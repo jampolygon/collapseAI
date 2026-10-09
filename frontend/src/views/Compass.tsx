@@ -8,6 +8,7 @@ export default function Compass() {
   const [heading, setHeading] = useState<number | null>(null);
   const [needsPermission, setNeedsPermission] = useState(false);
   const [noSensor, setNoSensor] = useState(false);
+  const [sensorWhy, setSensorWhy] = useState<string | null>(null);
   const { fix, error } = useGps();
   const [places, targetId] = usePlaces();
   const target = places.find((p) => p.id === targetId) ?? null;
@@ -26,8 +27,30 @@ export default function Compass() {
       if (e.webkitCompassHeading != null) {
         got = true;
         setHeading((e.webkitCompassHeading + screenAngle()) % 360); // iPhone
+      } else if (e.absolute && e.alpha != null) {
+        got = true;
+        setHeading((360 - e.alpha + screenAngle()) % 360); // some Android browsers
       }
     };
+    // Ask Chrome's sensor API WHY there is no reading: missing hardware vs. blocked by the browser.
+    let probe: any = null;
+    const Sensor = (window as any).AbsoluteOrientationSensor;
+    if (Sensor) {
+      try {
+        probe = new Sensor({ frequency: 5 });
+        probe.onerror = (ev: any) => {
+          const n = ev?.error?.name;
+          setSensorWhy(
+            n === 'NotReadableError' ? 'This phone has no compass sensor (magnetometer). Many budget phones do not.'
+              : n === 'NotAllowedError' || n === 'SecurityError' ? 'The browser blocked motion sensors. Allow "Motion sensors" in site settings, or try Chrome.'
+              : 'The compass sensor could not be read.',
+          );
+        };
+        probe.start();
+      } catch {
+        /* constructor blocked: the timeout message below still covers it */
+      }
+    }
     window.addEventListener('deviceorientationabsolute', onAbs as EventListener);
     window.addEventListener('deviceorientation', onRel as EventListener);
     // iPhone needs an explicit permission tap; Android Chrome does not
@@ -35,6 +58,7 @@ export default function Compass() {
     const t = setTimeout(() => !got && setNoSensor(true), 2500);
     return () => {
       clearTimeout(t);
+      try { probe?.stop(); } catch { /* ignore */ }
       window.removeEventListener('deviceorientationabsolute', onAbs as EventListener);
       window.removeEventListener('deviceorientation', onRel as EventListener);
     };
@@ -56,7 +80,11 @@ export default function Compass() {
     setName('');
   };
 
-  const h = heading ?? 0;
+  // No magnetometer? While walking, GPS knows the direction of travel.
+  const gpsHeading = fix?.heading != null && !Number.isNaN(fix.heading) && (fix.speed ?? 0) > 0.5 ? fix.heading : null;
+  const dir = heading ?? gpsHeading;
+  const fromGps = heading === null && gpsHeading !== null;
+  const h = dir ?? 0;
   const targetBearing = fix && target ? bearing(fix, target) : null;
   const sun = fix ? sunInfo(fix.lat, fix.lon) : null;
 
@@ -70,7 +98,7 @@ export default function Compass() {
       <div className="tools-grid">
         <section className="tool-section compass-tool">
           <div className="tool-heading"><Icon name="needle" size={22} /><span className="eyebrow">01 / Heading</span></div>
-          <svg viewBox="0 0 200 200" className="compass" role="img" aria-label={heading !== null ? `Heading ${Math.round(h)} degrees ${cardinal(h)}` : 'Compass'}>
+          <svg viewBox="0 0 200 200" className="compass" role="img" aria-label={dir !== null ? `Heading ${Math.round(h)} degrees ${cardinal(h)}` : 'Compass'}>
             <g className="compass-rose" style={{ transform: `rotate(${-h}deg)` }}>
               <circle cx="100" cy="100" r="92" className="dial" />
               {Array.from({ length: 72 }, (_, i) => (
@@ -87,10 +115,10 @@ export default function Compass() {
             <polygon points="100,4 106,18 94,18" className="lubber" />
           </svg>
           <div className="heading-readout">
-            {heading !== null ? (
-              <><b className="mono">{Math.round(h)}°</b> <span>{cardinal(h)}</span></>
+            {dir !== null ? (
+              <><b className="mono">{Math.round(h)}°</b> <span>{cardinal(h)}</span>{fromGps && <span className="muted tiny"> · from GPS while walking</span>}</>
             ) : (
-              <span className="muted small">{noSensor ? 'No compass sensor found. Use the sun direction below.' : 'Reading sensor…'}</span>
+              <span className="muted small">{noSensor ? `${sensorWhy ?? 'No compass sensor found.'} Walk a few steps to get direction from GPS, or use the sun below.` : 'Reading sensor…'}</span>
             )}
           </div>
           {needsPermission && <button className="primary" onClick={askPermission}>Enable compass</button>}
@@ -114,7 +142,7 @@ export default function Compass() {
           {target && fix && targetBearing !== null && (
             <p className="result">
               <b>{fmtDistance(distance(fix, target))}</b> away, toward <b>{cardinal(targetBearing)}</b> ({Math.round(targetBearing)}°)
-              {heading !== null && <><br />{turnHint(targetBearing - h)}</>}
+              {dir !== null && <><br />{turnHint(targetBearing - h)}</>}
             </p>
           )}
           {target && !fix && <p className="muted small">{error ?? 'Waiting for GPS…'}</p>}

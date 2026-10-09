@@ -54,6 +54,9 @@ export interface Fix {
   lat: number;
   lon: number;
   accuracy: number;
+  /** direction of travel in degrees (only while moving); lets the compass work without a magnetometer */
+  heading?: number | null;
+  speed?: number | null;
   time: number;
 }
 
@@ -71,7 +74,7 @@ export function useGps(enabled = true): { fix: Fix | null; error: string | null 
     if (!enabled || !('geolocation' in navigator)) return;
     const id = navigator.geolocation.watchPosition(
       (p) => {
-        const f = { lat: p.coords.latitude, lon: p.coords.longitude, accuracy: p.coords.accuracy, time: p.timestamp };
+        const f = { lat: p.coords.latitude, lon: p.coords.longitude, accuracy: p.coords.accuracy, time: p.timestamp, heading: p.coords.heading, speed: p.coords.speed };
         setFix(f);
         setError(null);
         localStorage.setItem('cai.lastfix', JSON.stringify(f));
