@@ -2,7 +2,8 @@ import { useEffect, useRef, useState } from 'react';
 import { ALL_MODELS, modelKey } from '../lib/catalog';
 import { getFile, type DLItem } from '../lib/downloads';
 import { gpuEnabled, loadModel, loadedModel, setGpuEnabled, unload, type ChatStats } from '../lib/llm';
-import { ask, type HistoryTurn } from '../lib/ask';
+import { ask, GENERAL_NOTE, type HistoryTurn } from '../lib/ask';
+import { deleteChat, getChat, getCurrentChatId, listChats, newChatId, saveChat, setCurrentChatId, type Chat } from '../lib/chats';
 import type { Passage } from '../lib/knowledge';
 import { Icon } from '../components/Icon';
 import { Status } from '../components/Status';
@@ -15,13 +16,16 @@ interface Turn {
   sources: Passage[];
   stats?: ChatStats | null;
   phase: 'reading' | 'answering' | 'done' | 'error';
-  kind?: 'answer' | 'smalltalk' | 'no-info';
+  kind?: 'answer' | 'smalltalk' | 'no-info' | 'general';
   progress?: number;
   error?: string;
 }
 
 // The conversation lives outside the component, so switching to Library and back keeps it.
+// Finished conversations are also saved to the device (lib/chats.ts) and survive app restarts.
 let savedTurns: Turn[] = [];
+let savedChatId: string | null = null;
+const fromSaved = (chat: Chat | null): Turn[] => (chat?.turns ?? []).map((t) => ({ ...t, phase: t.error ? 'error' : 'done' }));
 const finishRunning = (t: Turn): Turn =>
   t.phase === 'reading' || t.phase === 'answering' ? { ...t, phase: 'done', a: t.a ? `${t.a} …(stopped)` : t.a } : t;
 
@@ -56,7 +60,11 @@ export default function Ask({ downloads, onModelChange, onGoPrepare }: Props) {
   const [notice, setNotice] = useState<string | null>(null);
   const [current, setCurrent] = useState(loadedModel()?.id ?? null);
   const [gpu, setGpu] = useState(gpuEnabled());
-  const [turns, setTurns] = useState<Turn[]>(savedTurns);
+  const [chatId, setChatId] = useState<string>(() => savedChatId ?? getCurrentChatId() ?? newChatId());
+  const [turns, setTurns] = useState<Turn[]>(() => (savedChatId ? savedTurns : fromSaved(getChat(getCurrentChatId()))));
+  const [chats, setChats] = useState<Chat[]>(listChats);
+  const [showHistory, setShowHistory] = useState(false);
+  const stickToBottom = useRef(true); // auto-scroll only while the reader is already at the bottom
   const [input, setInput] = useState('');
   const [busy, setBusy] = useState(false);
   const abortRef = useRef<AbortController | null>(null);
@@ -69,14 +77,71 @@ export default function Ask({ downloads, onModelChange, onGoPrepare }: Props) {
   useEffect(() => () => {
     abortRef.current?.abort();
     savedTurns = turnsRef.current.map(finishRunning);
+    savedChatId = chatIdRef.current;
   }, []);
+
+  const chatIdRef = useRef(chatId);
+  chatIdRef.current = chatId;
+
+  // Save finished conversations to the device (never half-written answers).
+  useEffect(() => {
+    if (busy) return;
+    const done = turns.filter((t) => t.phase === 'done' || t.phase === 'error');
+    if (!done.length) return;
+    saveChat(chatId, done.map(({ q, a, sources, stats, kind, error }) => ({ q, a, sources, stats, kind, error })));
+    setCurrentChatId(chatId);
+  }, [turns, busy, chatId]);
+
+  useEffect(() => {
+    const refresh = () => setChats(listChats());
+    window.addEventListener('cai-chats', refresh);
+    return () => window.removeEventListener('cai-chats', refresh);
+  }, []);
+
+  // Let the reader scroll up while an answer is being written: stop following once they leave the bottom.
+  useEffect(() => {
+    // The conversation box scrolls on its own in the Ask layout; the page scrolls in others. Watch both.
+    const scrollers = [endRef.current?.closest('.chat'), endRef.current?.closest('.main-content')].filter(Boolean) as HTMLElement[];
+    const onScroll = (e: Event) => {
+      const el = e.currentTarget as HTMLElement;
+      if (el.scrollHeight <= el.clientHeight + 5) return; // this one isn't the scrolling element
+      stickToBottom.current = el.scrollHeight - el.scrollTop - el.clientHeight < 80;
+    };
+    // Smooth scrolling reports position late, so a new word could yank the view back down mid-gesture.
+    // Any touch or upward wheel stops following immediately; reaching the bottom again resumes it.
+    const release = (e: Event) => {
+      if (e.type === 'wheel' && (e as WheelEvent).deltaY > 0) return;
+      stickToBottom.current = false;
+    };
+    scrollers.forEach((el) => {
+      el.addEventListener('scroll', onScroll, { passive: true });
+      el.addEventListener('wheel', release, { passive: true });
+      el.addEventListener('touchstart', release, { passive: true });
+    });
+    return () => scrollers.forEach((el) => {
+      el.removeEventListener('scroll', onScroll);
+      el.removeEventListener('wheel', release);
+      el.removeEventListener('touchstart', release);
+    });
+  }, []);
+
+  const openChat = (id: string | null) => {
+    if (busy) return;
+    const next = id ?? newChatId();
+    setChatId(next);
+    setTurns(fromSaved(getChat(id)));
+    setCurrentChatId(id);
+    setShowHistory(false);
+    stickToBottom.current = true;
+  };
 
   useEffect(() => {
     if (!selected && available[0]) setSelected(available[0].id);
   }, [available.length]);
 
   useEffect(() => {
-    endRef.current?.scrollIntoView({ behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth', block: 'end' });
+    if (!stickToBottom.current) return;
+    endRef.current?.scrollIntoView({ behavior: 'instant', block: 'end' });
   }, [turns]);
 
   useEffect(() => {
@@ -119,6 +184,7 @@ export default function Ask({ downloads, onModelChange, onGoPrepare }: Props) {
     if (!q || busy) return;
     setInput('');
     setBusy(true);
+    stickToBottom.current = true; // a new question always brings the answer into view
     const i = turns.length;
     // the last finished exchanges, so "what about kids?" can be understood
     const history: HistoryTurn[] = turns
@@ -199,6 +265,27 @@ export default function Ask({ downloads, onModelChange, onGoPrepare }: Props) {
         )}
       </section>
 
+      {/* ---- saved chats ---- */}
+      <section className="chat-bar" aria-label="Chat history">
+        <button onClick={() => openChat(null)} disabled={busy || turns.length === 0}><Icon name="ask" size={16} />New chat</button>
+        <button onClick={() => setShowHistory(!showHistory)} aria-expanded={showHistory} disabled={busy || chats.length === 0}>
+          <Icon name="book" size={16} />History <span className="mono tiny">{chats.length}</span>
+        </button>
+      </section>
+      {showHistory && (
+        <ul className="chat-history" aria-label="Saved chats">
+          {chats.map((c) => (
+            <li key={c.id} className={c.id === chatId ? 'active' : ''}>
+              <button className="chat-open" onClick={() => openChat(c.id)}>
+                <span>{c.title}</span>
+                <span className="muted tiny mono">{new Date(c.updated).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })} · {c.turns.length}</span>
+              </button>
+              <button className="icon-button" aria-label={`Delete chat: ${c.title}`} onClick={() => { if (confirm('Delete this chat?')) { deleteChat(c.id); if (c.id === chatId) openChat(null); } }}><Icon name="trash" size={16} /></button>
+            </li>
+          ))}
+        </ul>
+      )}
+
       {/* ---- conversation ---- */}
       <section className={`chat ${turns.length === 0 ? 'chat-empty' : ''}`} aria-label="Conversation">
         {turns.length === 0 && (
@@ -224,6 +311,7 @@ export default function Ask({ downloads, onModelChange, onGoPrepare }: Props) {
                 </div>
               )}
               {t.phase === 'answering' && busy && i === turns.length - 1 && <p className="generation-state muted small" role="status"><span className="loading-dot" />Generating on this device</p>}
+              {t.kind === 'general' && t.a && <p className="general-note muted small"><Icon name="info" size={14} />{GENERAL_NOTE}</p>}
               {t.a && <div className="answer"><RichText text={t.a} /></div>}
               {!current && t.phase !== 'error' && t.kind === 'answer' && t.sources.length > 0 && (
                 <p className="muted small">AI not started. Here is what the offline library says:</p>
