@@ -8,7 +8,7 @@ CollapseAI is an AI assistant that lives on your phone or computer. Ask it thing
 
 ---
 
-## 📱 Install on your phone (Android)
+##  Install on your phone (Android)
 
 1. Open the CollapseAI link in **Chrome**.
 2. Tap the **⋮ menu** (top right) → **Add to Home screen** (or **Install app**).
@@ -20,7 +20,7 @@ CollapseAI is an AI assistant that lives on your phone or computer. Ask it thing
 
 > iPhone: open the link in Safari → **Share** → **Add to Home Screen**. The library and tools work; the AI may be slow.
 
-## 💻 Install on your computer
+##  Install on your computer
 
 1. Open the CollapseAI link in **Chrome** or **Edge**.
 2. Click the **install icon** in the address bar (a small screen with an arrow) → **Install**.
@@ -37,7 +37,7 @@ CollapseAI is an AI assistant that lives on your phone or computer. Ask it thing
 
 ---
 
-## 👩‍💻 For the team: run it from the code
+##  For the team: run it from the code
 
 You need **[Node.js](https://nodejs.org)** (the LTS version) and **[Git](https://git-scm.com)**.
 
