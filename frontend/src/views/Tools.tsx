@@ -1,16 +1,17 @@
 import { useEffect, useRef, useState } from 'react';
 import { useLocalState } from '../hooks';
+import { Icon, plainLabel } from '../components/Icon';
 
 export default function Tools() {
   return (
-    <div className="stack">
+    <div className="page-content tools-page">
+      <header className="page-intro"><span className="eyebrow">Tools / Field utilities</span><h2>Tools for the field.</h2><p>Simple utilities that work on this device.<br />No AI model required.</p></header>
+      <div className="tools-grid">
       <SOS />
       <WaterCalc />
       <GoBag />
-      <section className="card compact">
-        <h3>🧭 Compass · 🗺 Offline map</h3>
-        <p className="muted small">Coming next (P1/P2 in PLAN.md).</p>
-      </section>
+      </div>
+      <div className="planned-tools"><Icon name="compass" size={18} /><span>Compass &amp; offline map</span><span className="muted tiny">Planned · not yet available</span></div>
     </div>
   );
 }
@@ -77,14 +78,15 @@ function SOS() {
   }, [running]);
 
   return (
-    <section className="card compact">
-      <h3>🔦 SOS signal</h3>
-      <p className="muted small">Flashes S-O-S in Morse code (··· ––– ···) with the flashlight and screen. Visible for kilometers at night.</p>
+    <section className="tool-section sos-tool">
+      <div className="tool-heading"><Icon name="flashlight" size={22} /><span className="eyebrow">01 / Signaling</span></div><h3>SOS signal</h3>
+      <p className="muted small">Flashes S-O-S in Morse code with the flashlight or screen.</p>
+      <div className="morse-preview mono" aria-label="SOS: three short, three long, three short">··· <span>———</span> ···</div>
       <button className={running ? 'danger big' : 'primary big'} onClick={() => setRunning(!running)}>
         {running ? 'Stop SOS' : 'Start SOS'}
       </button>
       {running && torchOk === false && <p className="muted tiny">No flashlight access. Using the screen instead; turn brightness up.</p>}
-      {running && <div className={`sos-overlay ${lit ? 'lit' : ''}`} onClick={() => setRunning(false)}>tap to stop</div>}
+      {running && <button autoFocus className={`sos-overlay ${lit ? 'lit' : ''}`} aria-label="Stop SOS signal" onClick={() => setRunning(false)} onKeyDown={event => { if (event.key === 'Escape') setRunning(false); if (event.key === 'Tab') event.preventDefault(); }}>Tap to stop · Esc</button>}
     </section>
   );
 }
@@ -101,8 +103,8 @@ function WaterCalc() {
   const perGallon = strength === '6' ? 8 : 6;
   const drops = Math.ceil((liters / 3.785) * perGallon * (cloudy ? 2 : 1));
   return (
-    <section className="card compact">
-      <h3>💧 Make water safe (bleach)</h3>
+    <section className="tool-section water-tool">
+      <div className="tool-heading"><Icon name="water" size={22} /><span className="eyebrow">02 / Water treatment</span></div><h3>Water purification</h3><p className="muted small">Enter your water volume and bleach strength.</p>
       <div className="form-row">
         <label>
           Water (liters)
@@ -151,16 +153,15 @@ function GoBag() {
   const [checked, setChecked] = useLocalState<string[]>('cai.gobag', []);
   const toggle = (item: string) => setChecked(checked.includes(item) ? checked.filter((c) => c !== item) : [...checked, item]);
   return (
-    <section className="card compact">
-      <h3>
-        🎒 Go-bag checklist{' '}
-        <span className="muted small">
+    <section className="tool-section gobag-tool">
+      <div className="tool-heading"><Icon name="bag" size={22} /><span className="eyebrow">03 / Preparedness</span></div><div className="section-heading"><h3>72-hour go-bag</h3>
+        <span className="muted small mono">
           {checked.length}/{GOBAG.length}
         </span>
-      </h3>
+      </div><p className="muted small">Keep the essentials together. Your checklist is saved on this device.</p>
       {GOBAG.map((g) => (
         <label key={g} className="check-item">
-          <input type="checkbox" checked={checked.includes(g)} onChange={() => toggle(g)} /> {g}
+          <input type="checkbox" checked={checked.includes(g)} onChange={() => toggle(g)} /><span>{plainLabel(g)}</span>
         </label>
       ))}
     </section>

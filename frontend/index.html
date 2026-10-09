@@ -3,7 +3,18 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-    <meta name="theme-color" content="#0f1a12" />
+    <meta name="theme-color" content="#fafafa" />
+    <script>
+      // Light by default; apply an explicit saved dark theme before the first paint.
+      (function () {
+        var selected;
+        try { selected = localStorage.getItem('cai.theme'); } catch (_) {}
+        var theme = selected === 'dark' ? 'dark' : 'light';
+        document.documentElement.dataset.theme = theme;
+        document.documentElement.style.colorScheme = theme;
+        document.querySelector('meta[name="theme-color"]').content = theme === 'dark' ? '#151515' : '#fafafa';
+      })();
+    </script>
     <link rel="manifest" href="./manifest.webmanifest" />
     <link rel="icon" href="./icon.svg" type="image/svg+xml" />
     <title>CollapseAI</title>

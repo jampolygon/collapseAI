@@ -1,37 +1,26 @@
-import { useState } from 'react';
 import type { DLItem } from '../lib/downloads';
 import type { Pack } from '../lib/knowledge';
 import Ask from './Ask';
 import Library from './Library';
 import Tools from './Tools';
+import { Skeleton } from '../components/Skeleton';
 
-type Tab = 'ask' | 'library' | 'tools';
+export type Tab = 'ask' | 'library' | 'tools';
 
 interface Props {
   downloads: DLItem[];
   packs: Pack[];
+  tab: Tab;
+  knowledgeLoading: boolean;
   onModelChange: () => void;
   onGoPrepare: () => void;
 }
 
-export default function Survive({ downloads, packs, onModelChange, onGoPrepare }: Props) {
-  const [tab, setTab] = useState<Tab>('ask');
+export default function Survive({ downloads, packs, tab, knowledgeLoading, onModelChange, onGoPrepare }: Props) {
   return (
-    <div className="stack">
-      <div className="tabs">
-        <button className={tab === 'ask' ? 'active' : ''} onClick={() => setTab('ask')}>
-          💬 Ask AI
-        </button>
-        <button className={tab === 'library' ? 'active' : ''} onClick={() => setTab('library')}>
-          📚 Library
-        </button>
-        <button className={tab === 'tools' ? 'active' : ''} onClick={() => setTab('tools')}>
-          🧰 Tools
-        </button>
-      </div>
-
-      {packs.length === 0 && tab !== 'tools' && (
-        <div className="banner warn">
+    <div className={`survive-view ${tab === 'ask' ? 'ask-layout' : ''}`}>
+      {!knowledgeLoading && packs.length === 0 && tab !== 'tools' && (
+        <div className="banner warn knowledge-notice">
           No knowledge downloaded yet.{' '}
           <button className="link" onClick={onGoPrepare}>
             Go to Prepare →
@@ -40,7 +29,7 @@ export default function Survive({ downloads, packs, onModelChange, onGoPrepare }
       )}
 
       {tab === 'ask' && <Ask downloads={downloads} onModelChange={onModelChange} onGoPrepare={onGoPrepare} />}
-      {tab === 'library' && <Library packs={packs} />}
+      {tab === 'library' && (knowledgeLoading ? <div className="page-content"><Skeleton label="Loading your knowledge library" lines={6} className="library-skeleton" /></div> : <Library packs={packs} />)}
       {tab === 'tools' && <Tools />}
     </div>
   );
