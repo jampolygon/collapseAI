@@ -64,6 +64,25 @@ npm run dev:phone
 
 > Windows may ask to allow Node.js through the firewall. Click **Allow**.
 
+### Branches (who works where)
+
+| Branch | For | Main files |
+|---|---|---|
+| `main` | Working, demo-ready code only. Merge into it via pull requests | everything |
+| `frontend` | Screens, design, offline/PWA, tools (SOS, compass, map) | `src/views/`, `src/App.tsx`, `src/styles.css`, `public/sw.js` |
+| `backend` | Python: knowledge pack builder (Wikipedia etc.), LAN hub server | `scripts/`, `content/`, `hub/` (new) |
+| `ai` | Running the AI, search, prompts, model choice, speed tests | `src/lib/llm.ts`, `src/lib/ask.ts`, `src/lib/knowledge.ts`, `src/lib/catalog.ts` |
+
+```bash
+git checkout frontend        # switch to your branch
+git pull                     # get the latest
+# ...work, then:
+git add -A && git commit -m "what you did"
+git push
+```
+
+Then open a **pull request** into `main` on GitHub when something works. Merge `main` into your branch often (`git merge main`) so the three branches don't drift apart.
+
 ### Commands
 
 | Command | What it does |
