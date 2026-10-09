@@ -9,14 +9,16 @@
     "preview": "vite preview",
     "preview:phone": "vite build && vite preview --mode phone",
     "typecheck": "tsc --noEmit",
-    "test": "vitest run",
-    "test:watch": "vitest"
+    "test": "vitest run src",
+    "test:watch": "vitest",
+    "test:ui": "node --test tests/ui.test.mjs"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "type": "module",
   "dependencies": {
+    "@fontsource-variable/inter": "^5.3.0",
     "@wllama/wllama": "^3.8.1",
     "minisearch": "^7.2.0",
     "react": "^19.3.0",

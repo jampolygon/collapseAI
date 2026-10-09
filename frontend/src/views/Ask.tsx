@@ -4,6 +4,10 @@ import { getFile, type DLItem } from '../lib/downloads';
 import { gpuEnabled, loadModel, loadedModel, setGpuEnabled, unload, type ChatStats } from '../lib/llm';
 import { ask } from '../lib/ask';
 import type { Passage } from '../lib/knowledge';
+import { Icon } from '../components/Icon';
+import { Status } from '../components/Status';
+import { RichText } from '../components/RichText';
+import { Skeleton } from '../components/Skeleton';
 
 interface Turn {
   q: string;
@@ -17,10 +21,9 @@ interface Turn {
 
 const EXAMPLES = [
   'How do I stop heavy bleeding?',
-  'Paano gamutin ang paso?',
   'How do I make water safe to drink?',
   'What should I do during an earthquake?',
-  'What are the warning signs of dengue?',
+  'What belongs in a 72-hour go-bag?',
 ];
 
 interface Props {
@@ -51,14 +54,23 @@ export default function Ask({ downloads, onModelChange, onGoPrepare }: Props) {
   const [busy, setBusy] = useState(false);
   const abortRef = useRef<AbortController | null>(null);
   const endRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
     if (!selected && available[0]) setSelected(available[0].id);
   }, [available.length]);
 
   useEffect(() => {
-    endRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' });
+    endRef.current?.scrollIntoView({ behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth', block: 'end' });
   }, [turns]);
+
+  useEffect(() => {
+    const textarea = inputRef.current;
+    if (textarea) {
+      textarea.style.height = 'auto';
+      textarea.style.height = `${Math.min(textarea.scrollHeight, 180)}px`;
+    }
+  }, [input]);
 
   const doLoad = async () => {
     const m = MODELS.find((x) => x.id === selected);
@@ -113,19 +125,15 @@ export default function Ask({ downloads, onModelChange, onGoPrepare }: Props) {
   };
 
   return (
-    <div className="stack">
+    <div className="ask-screen">
       {/* ---- model loader ---- */}
-      <section className="card compact">
+      <section className="model-controls" aria-label="Local model controls">
         {available.length === 0 ? (
-          <p>
-            No AI downloaded. You can still search the library, or{' '}
-            <button className="link" onClick={onGoPrepare}>
-              download an AI in Prepare →
-            </button>
-          </p>
+          <div className="model-missing"><Icon name="cpu" size={18} /><p>No model downloaded. Ask to search your knowledge, or <button className="link" onClick={onGoPrepare}>prepare a local model <Icon name="arrow" size={14} /></button></p></div>
         ) : (
           <div className="loader">
-            <select value={selected} onChange={(e) => setSelected(e.target.value)} disabled={loading}>
+            <Icon name="cpu" size={18} />
+            <select aria-label="Downloaded AI model" value={selected} onChange={(e) => setSelected(e.target.value)} disabled={loading}>
               {available.map((m) => (
                 <option key={m.id} value={m.id}>
                   {m.name} ({m.family})
@@ -133,16 +141,16 @@ export default function Ask({ downloads, onModelChange, onGoPrepare }: Props) {
               ))}
             </select>
             {current === selected ? (
-              <span className="badge ok">✓ AI ready</span>
+              <Status label="Model" value="Loaded" state="ready" />
             ) : (
               <button className="primary" onClick={doLoad} disabled={loading}>
-                {loading ? 'Waking up the AI…' : 'Start AI'}
+                {loading ? <><span className="loading-dot" />Loading model…</> : 'Start AI'}
               </button>
             )}
           </div>
         )}
         {available.length > 0 && (
-          <label className="check-item small muted">
+          <label className="gpu-control small muted">
             <input
               type="checkbox"
               checked={gpu}
@@ -154,52 +162,54 @@ export default function Ask({ downloads, onModelChange, onGoPrepare }: Props) {
                 onModelChange();
               }}
             />
-            Use GPU (turn off if answers are slow; weak phone GPUs are often slower than the CPU)
+            Use GPU <span className="gpu-help">— turn off if answers are slower</span>
           </label>
         )}
-        {loadErr && <p className="error small">Could not start the AI: {loadErr}</p>}
+        {loadErr && <p className="error small" role="alert"><Icon name="info" size={16} />Could not start the AI: {loadErr}</p>}
+        {loading && <Skeleton label="Initializing the local model" lines={2} className="model-skeleton" />}
         {!current && available.length > 0 && !loading && (
           <p className="muted small">Without the AI, you still get matching library articles for every question.</p>
         )}
       </section>
 
       {/* ---- conversation ---- */}
-      <section className="chat">
+      <section className={`chat ${turns.length === 0 ? 'chat-empty' : ''}`} aria-label="Conversation">
         {turns.length === 0 && (
           <div className="examples">
-            <p className="muted">Try asking:</p>
-            {EXAMPLES.map((e) => (
-              <button key={e} className="chip" onClick={() => send(e)}>
-                {e}
-              </button>
-            ))}
+            <span className="empty-state-label"><Icon name="ask" size={20} />CollapseAI</span>
+            <h2>What do you need<br />help with?</h2>
+            <p className="muted empty-description">Local answers from your downloaded survival knowledge.<br />The library works even without an AI model.</p>
+            <div className="suggestions">{EXAMPLES.map((example, index) => <button key={example} className="suggestion" onClick={() => send(example)}><Icon name={(['aid', 'water', 'storm', 'bag'] as const)[index]} size={18} /><span>{example}</span><Icon name="arrow" size={16} /></button>)}</div>
           </div>
         )}
         {turns.map((t, i) => (
-          <div key={i} className="turn">
+          <article key={i} className="turn" aria-label={`Question ${i + 1}`}>
             <div className="q">{t.q}</div>
             <div className="a">
+              <div className="assistant-label"><Icon name="mountain" size={16} /><span>CollapseAI</span><span className="mono muted">{current ? 'Local response' : 'Knowledge search'}</span></div>
               {t.phase === 'reading' && current && (
-                <p className="muted">
-                  📖 Reading {t.sources.length} source{t.sources.length === 1 ? '' : 's'}…
+                <div className="response-loading">
+                <p className="muted generation-state" role="status">
+                  Preparing context · {t.sources.length} reference{t.sources.length === 1 ? '' : 's'}
                   {t.progress !== undefined ? ` ${Math.round(t.progress * 100)}%` : ''}
                 </p>
+                <Skeleton label="Waiting for the first response" lines={3} className="response-skeleton" />
+                </div>
               )}
-              {t.a && <div className="answer">{t.a}</div>}
+              {t.phase === 'answering' && busy && i === turns.length - 1 && <p className="generation-state muted small" role="status"><span className="loading-dot" />Generating on this device</p>}
+              {t.a && <div className="answer"><RichText text={t.a} /></div>}
               {!current && t.phase !== 'error' && (
                 <p className="muted small">AI not started. Here is what the offline library says:</p>
               )}
-              {t.phase === 'error' && <p className="error">⚠ {t.error}</p>}
+              {t.phase === 'error' && <p className="error" role="alert"><Icon name="info" size={16} />{t.error}</p>}
               {t.sources.length > 0 && (
                 <details className="sources" open={!current}>
-                  <summary>Sources ({t.sources.length})</summary>
-                  {t.sources.map((s, n) => (
+                  <summary>Retrieved references <span className="mono">{t.sources.length}</span></summary>
+                  {t.sources.map((s) => (
                     <div key={s.id} className="source">
-                      <b>
-                        [{n + 1}] {s.title}
-                      </b>{' '}
-                      <span className="muted tiny">{s.category}</span>
-                      <p className="small">{s.text}</p>
+                      <div className="source-heading"><Icon name="book" size={16} /><span className="muted tiny">{s.category}</span><span>/</span><strong>{s.title}</strong></div>
+                      <RichText text={s.text} />
+                      {s.source && <p className="source-attribution muted tiny">Source: {s.source}</p>}
                     </div>
                   ))}
                 </details>
@@ -208,35 +218,44 @@ export default function Ask({ downloads, onModelChange, onGoPrepare }: Props) {
                 <p className="muted">Nothing found in your downloaded packs. Try other words, or download more topics.</p>
               )}
               {t.stats && (
-                <div className="muted tiny stats">
-                  ⚡ read {t.stats.promptTokens} tokens @ {t.stats.promptPerSec.toFixed(1)}/s · wrote {t.stats.genTokens} @{' '}
+                <div className="muted tiny stats mono">
+                  Read {t.stats.promptTokens} tokens @ {t.stats.promptPerSec.toFixed(1)}/s · wrote {t.stats.genTokens} @{' '}
                   {t.stats.genPerSec.toFixed(1)}/s · on this device, offline
                 </div>
               )}
             </div>
-          </div>
+          </article>
         ))}
         <div ref={endRef} />
       </section>
 
+      <div className="composer-area">
       <div className="composer">
-        <input
+        <label className="sr-only" htmlFor="question">Your question</label>
+        <textarea
+          id="question"
+          ref={inputRef}
+          rows={1}
           value={input}
-          placeholder="Ask anything… (English, Tagalog keywords work too)"
+          placeholder="Ask a survival question…"
           onChange={(e) => setInput(e.target.value)}
-          onKeyDown={(e) => e.key === 'Enter' && send()}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing) { e.preventDefault(); void send(); }
+          }}
         />
         {busy ? (
-          <button onClick={() => abortRef.current?.abort()}>Stop</button>
+          <button className="stop-button" onClick={() => abortRef.current?.abort()} aria-label="Stop generating"><span aria-hidden="true" />Stop</button>
         ) : (
-          <button className="primary" onClick={() => send()} disabled={!input.trim()}>
-            Ask
+          <button className="primary send-button" aria-label="Send question" title="Send question" onClick={() => send()} disabled={!input.trim()}>
+            <Icon name="send" />
           </button>
         )}
       </div>
+      <div className="composer-hints"><span>English &amp; Tagalog keywords</span><span>Enter to send <span aria-hidden="true">·</span> Shift + Enter for a new line</span></div>
       <p className="disclaimer tiny muted">
-        ⚕ CollapseAI is not a doctor. Use it when no professional help is available, and seek help as soon as you can.
+        CollapseAI is not a doctor. Seek professional help as soon as you can.
       </p>
+      </div>
     </div>
   );
 }

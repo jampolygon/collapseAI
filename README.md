@@ -92,9 +92,10 @@ Then open a **pull request** into `main` on GitHub when something works. Merge `
 | `npm run build` | Build the final website into `frontend/dist/` |
 | `npm run preview` | Run the final build (this is where offline mode works) |
 | `npm run typecheck` | Check the code for type errors |
-| `npm test` | Run the tests (vitest) |
+| `npm test` | Run frontend, UI regression, and knowledge-pack tests |
 | `npm run packs` | Rebuild knowledge packs from `backend/content/*.md` (Node — no Python needed) |
 | `npm run packs:check` | Fail if `frontend/public/packs/*.json` is out of date vs `backend/content/` (use in CI) |
+| `npm run test:ui` | Run frontend rendering and theme regression checks |
 
 ### How it works
 
@@ -168,3 +169,13 @@ from the root, and `python scripts/build_packs.py` works from `backend/`.
 Generated JSON stays in `frontend/public/packs/` for static hosting and offline use.
 See [backend/README.md](backend/README.md) for the content workflow and
 [docs/SYSTEM_AUDIT.md](docs/SYSTEM_AUDIT.md) for the initial system audit.
+
+### Frontend appearance
+
+The sidebar provides Ask, Prepare, Library, and Tools. Collapse it on desktop or
+open it as a drawer on mobile. Floating labels identify collapsed icons on hover
+or keyboard focus. Light is the default; choose Light or Dark in the sidebar,
+and the choice is saved locally. Inter typography is bundled for offline use.
+Skeletons mark device, knowledge, cache, and model loading. Prepare reports file downloads, loaded AI, app/engine
+caching, and browser storage separately. See [docs/UI_REDESIGN.md](docs/UI_REDESIGN.md)
+for implementation details and verification limits.
