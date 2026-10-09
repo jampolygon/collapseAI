@@ -47,6 +47,7 @@ export default function Ask({ downloads, onModelChange, onGoPrepare }: Props) {
   );
   const [loading, setLoading] = useState(false);
   const [loadErr, setLoadErr] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
   const [current, setCurrent] = useState(loadedModel()?.id ?? null);
   const [gpu, setGpu] = useState(gpuEnabled());
   const [turns, setTurns] = useState<Turn[]>([]);
@@ -77,11 +78,16 @@ export default function Ask({ downloads, onModelChange, onGoPrepare }: Props) {
     if (!m) return;
     setLoading(true);
     setLoadErr(null);
+    setNotice(null);
     try {
       const f = await getFile(modelKey(m.id));
       if (!f) throw new Error('Model file missing. Download it again in Prepare.');
-      await loadModel(m, f);
+      const { fellBackToCpu } = await loadModel(m, f);
       setCurrent(m.id);
+      if (fellBackToCpu) {
+        setGpu(false);
+        setNotice('The GPU gave unreadable output on this phone, so the AI switched to the CPU automatically.');
+      }
     } catch (e: any) {
       setLoadErr(String(e?.message ?? e));
       await unload();
@@ -165,6 +171,7 @@ export default function Ask({ downloads, onModelChange, onGoPrepare }: Props) {
             Use GPU <span className="gpu-help">— turn off if answers are slower</span>
           </label>
         )}
+        {notice && <p className="muted small" role="status"><Icon name="info" size={16} />{notice}</p>}
         {loadErr && <p className="error small" role="alert"><Icon name="info" size={16} />Could not start the AI: {loadErr}</p>}
         {loading && <Skeleton label="Initializing the local model" lines={2} className="model-skeleton" />}
         {!current && available.length > 0 && !loading && (

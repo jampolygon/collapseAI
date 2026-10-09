@@ -22,14 +22,21 @@ let current: ModelEntry | null = null;
 
 export const loadedModel = () => current;
 
-/** GPU (WebGPU) on/off. Weak/integrated GPUs can be slower than the CPU, so this is user-switchable. */
+/**
+ * GPU (WebGPU) on/off. Some phone GPUs give broken output (garbage / Chinese text) and weak GPUs
+ * can be slower than the CPU, so phones default to the CPU. A saved choice always wins.
+ */
 const LS_GPU = 'cai.gpu';
+const isPhone = () => typeof navigator !== 'undefined' && /Android|iPhone|iPad|Mobile/i.test(navigator.userAgent);
 export function gpuEnabled(): boolean {
   try {
-    return localStorage.getItem(LS_GPU) !== 'off';
+    const saved = localStorage.getItem(LS_GPU);
+    if (saved === 'on') return true;
+    if (saved === 'off') return false;
   } catch {
-    return true;
+    /* fall through to the default */
   }
+  return !isPhone();
 }
 export function setGpuEnabled(on: boolean) {
   try {
@@ -39,17 +46,57 @@ export function setGpuEnabled(on: boolean) {
   }
 }
 
-export async function loadModel(model: ModelEntry, file: Blob) {
-  await unload();
+/** True when a short self-test answer looks like normal English (not garbage or another script). */
+export function looksSane(text: string): boolean {
+  const t = text.trim();
+  return t.length > 0 && /^[ -~\s]+$/.test(t) && /ok/i.test(t);
+}
+
+async function create(model: ModelEntry, file: Blob, gpu: boolean) {
   const w = new Wllama({ default: wasmUrl }, { logger: LoggerWithoutDebug, suppressNativeLog: true });
-  await w.loadModel([file], {
-    n_ctx: 4096,
-    n_batch: 512,
-    ...(gpuEnabled() ? {} : { n_gpu_layers: 0 }),
-    ...(model.loadParams ?? {}),
-  });
-  wllama = w;
+  try {
+    await w.loadModel([file], {
+      n_ctx: 4096,
+      n_batch: 512,
+      ...(gpu ? {} : { n_gpu_layers: 0 }),
+      ...(model.loadParams ?? {}),
+    });
+  } catch (e) {
+    await w.exit().catch(() => {}); // a failed load must not keep hundreds of MB allocated
+    throw e;
+  }
+  return w;
+}
+
+async function selfTest(): Promise<boolean> {
+  try {
+    let out = '';
+    await chat([{ role: 'user', content: 'Reply with exactly one word: OK' }], {
+      onToken: (t) => { out += t; },
+      maxTokens: 8,
+      temperature: 0,
+    });
+    return looksSane(out);
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Load a model. With the GPU on, a short self-test checks the output is sane English; if not,
+ * it reloads on the CPU and remembers that choice. Returns whether it fell back.
+ */
+export async function loadModel(model: ModelEntry, file: Blob): Promise<{ fellBackToCpu: boolean }> {
+  await unload();
+  const useGpu = gpuEnabled();
+  wllama = await create(model, file, useGpu);
   current = model;
+  if (!useGpu || (await selfTest())) return { fellBackToCpu: false };
+  await unload();
+  setGpuEnabled(false);
+  wllama = await create(model, file, false);
+  current = model;
+  return { fellBackToCpu: true };
 }
 
 export async function unload() {
@@ -62,7 +109,7 @@ export async function unload() {
 /** Stream a chat answer. onToken gets each new piece of text; onPrompt gets prompt-reading progress (0..1). */
 export async function chat(
   messages: ChatMessage[],
-  opts: { onToken: (t: string) => void; onPrompt?: (p: number) => void; signal?: AbortSignal; maxTokens?: number },
+  opts: { onToken: (t: string) => void; onPrompt?: (p: number) => void; signal?: AbortSignal; maxTokens?: number; temperature?: number },
 ): Promise<ChatStats | null> {
   if (!wllama || !current) throw new Error('No model loaded');
   let stats: ChatStats | null = null;
@@ -70,7 +117,7 @@ export async function chat(
     messages,
     stream: true,
     max_tokens: opts.maxTokens ?? 400,
-    temperature: 0.3,
+    temperature: opts.temperature ?? 0.3,
     abortSignal: opts.signal,
     return_progress: true,
     chat_template_kwargs: current.chatKwargs,
