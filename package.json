@@ -9,7 +9,11 @@
     "preview": "vite preview",
     "preview:phone": "vite build && vite preview --mode phone",
     "typecheck": "tsc --noEmit",
-    "packs": "python scripts/build_packs.py"
+    "packs": "node scripts/build-packs.mjs",
+    "packs:check": "node scripts/build-packs.mjs --check",
+    "packs:py": "python scripts/build_packs.py",
+    "test": "vitest run",
+    "test:watch": "vitest"
   },
   "keywords": [],
   "author": "",
@@ -27,7 +31,8 @@
     "@vitejs/plugin-basic-ssl": "^2.3.0",
     "@vitejs/plugin-react": "^6.1.2",
     "typescript": "^7.0.2",
-    "vite": "^8.3.4"
+    "vite": "^8.3.4",
+    "vitest": "^3.2.7"
   },
   "private": true
 }

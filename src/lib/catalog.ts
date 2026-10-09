@@ -1,6 +1,11 @@
 // Everything the user can download, described in plain language.
 // Model files must stay under 2 GB (WebAssembly ArrayBuffer limit).
 
+import SIZES from '../../public/packs/sizes.json';
+
+/** Real byte size of each built pack, written by `npm run packs` (scripts/build-packs.mjs). */
+const PACK_BYTES = SIZES as Record<string, number>;
+
 export interface ModelEntry {
   id: string;
   name: string; // friendly name shown to non-technical users
@@ -77,17 +82,25 @@ export interface PackEntry {
   name: string;
   icon: string;
   url: string; // relative to the app (later: CDN / hub)
-  sizeMB: number; // size of the full planned pack (demo files are smaller)
+  sizeMB: number; // measured from the built JSON, so totals and progress bars are honest
   blurb: string;
 }
 
+/**
+ * Pack sizes come from public/packs/sizes.json, which `npm run packs` regenerates from the
+ * real bytes of each built pack. The literal below is only a fallback for a pack that has not
+ * been built yet (so Prepare still renders before the first build).
+ */
+const packSizeMB = (id: string, fallback: number) =>
+  typeof PACK_BYTES[id] === 'number' && PACK_BYTES[id] > 0 ? PACK_BYTES[id] / 1e6 : fallback;
+
 export const PACKS: PackEntry[] = [
-  { id: 'first-aid', name: 'First Aid', icon: '🩹', url: 'packs/first-aid.json', sizeMB: 4, blurb: 'Bleeding, burns, CPR, choking, fractures, shock, heat stroke.' },
-  { id: 'survival', name: 'Survival Basics', icon: '🔥', url: 'packs/survival.json', sizeMB: 3, blurb: 'Safe water, fire, shelter, signaling for rescue, navigation.' },
-  { id: 'disasters', name: 'Disasters (PH)', icon: '🌀', url: 'packs/disasters.json', sizeMB: 2, blurb: 'Typhoon, flood, earthquake, volcano, go-bag, evacuation.' },
-  { id: 'medicine', name: 'Health & Illness', icon: '💊', url: 'packs/medicine.json', sizeMB: 25, blurb: 'Fever, diarrhea, dengue, leptospirosis, infections, hygiene.' },
-  { id: 'food', name: 'Food & Farming', icon: '🌾', url: 'packs/food.json', sizeMB: 15, blurb: 'Food storage, preserving, gardening, fishing, edible plants.' },
-  { id: 'engineering', name: 'Engineering & Power', icon: '🔧', url: 'packs/engineering.json', sizeMB: 40, blurb: 'Solar & batteries, water filters, simple tools, radio, repairs.' },
+  { id: 'first-aid', name: 'First Aid', icon: '🩹', url: 'packs/first-aid.json', sizeMB: packSizeMB('first-aid', 4), blurb: 'Bleeding, burns, CPR, choking, fractures, shock, heat stroke.' },
+  { id: 'survival', name: 'Survival Basics', icon: '🔥', url: 'packs/survival.json', sizeMB: packSizeMB('survival', 3), blurb: 'Safe water, fire, shelter, signaling for rescue, navigation.' },
+  { id: 'disasters', name: 'Disasters (PH)', icon: '🌀', url: 'packs/disasters.json', sizeMB: packSizeMB('disasters', 2), blurb: 'Typhoon, flood, earthquake, volcano, go-bag, evacuation.' },
+  { id: 'medicine', name: 'Health & Illness', icon: '💊', url: 'packs/medicine.json', sizeMB: packSizeMB('medicine', 25), blurb: 'Fever, diarrhea, dengue, leptospirosis, infections, hygiene.' },
+  { id: 'food', name: 'Food & Farming', icon: '🌾', url: 'packs/food.json', sizeMB: packSizeMB('food', 15), blurb: 'Food storage, preserving, gardening, fishing, edible plants.' },
+  { id: 'engineering', name: 'Engineering & Power', icon: '🔧', url: 'packs/engineering.json', sizeMB: packSizeMB('engineering', 40), blurb: 'Solar & batteries, water filters, simple tools, radio, repairs.' },
 ];
 
 export interface Kit {

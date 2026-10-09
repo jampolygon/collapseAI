@@ -92,7 +92,9 @@ Then open a **pull request** into `main` on GitHub when something works. Merge `
 | `npm run build` | Build the final website into `dist/` |
 | `npm run preview` | Run the final build (this is where offline mode works) |
 | `npm run typecheck` | Check the code for type errors |
-| `npm run packs` | Rebuild knowledge packs from `content/*.md` (needs Python) |
+| `npm test` | Run the tests (vitest) |
+| `npm run packs` | Rebuild knowledge packs from `content/*.md` (Node — no Python needed) |
+| `npm run packs:check` | Fail if `public/packs/*.json` is out of date vs `content/` (use in CI) |
 
 ### How it works
 
@@ -123,6 +125,19 @@ PLAN.md                hackathon plan and priorities
 ```
 
 **Adding knowledge:** write in `content/*.md` (copy the style of the existing articles), then run `npm run packs`.
+
+The builder is `scripts/build-packs.mjs` (zero dependencies, Node only). `scripts/build_packs.py`
+is the original and produces the same JSON, if you prefer Python (`npm run packs:py`).
+
+Per-article fields, all optional:
+
+| Field | Meaning |
+|---|---|
+| `category:` | shown in the Library and used as a search field |
+| `source:` | attribution shown with every citation |
+| `tags:` | comma-separated search hints, Tagalog included (`tags: bleeding, dugo, sugat`) |
+| `disaster_types:` | comma-separated types used to filter retrieval (`disaster_types: flood, typhoon`) |
+| `last_verified:` | ISO date the article was last checked. Set it once in the pack header to cover every article. |
 
 ### Putting it online
 

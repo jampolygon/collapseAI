@@ -2,6 +2,7 @@
 id: engineering
 name: Engineering & Power
 license: CC BY-SA 4.0, CollapseAI team.
+last_verified: 2026-10-09
 ---
 
 # Charging a phone without grid power

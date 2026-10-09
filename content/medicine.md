@@ -2,6 +2,7 @@
 id: medicine
 name: Health & Illness
 license: CC BY-SA 4.0, CollapseAI team. Based on WHO and DOH Philippines public health guidance.
+last_verified: 2026-10-09
 ---
 
 # Fever

@@ -10,6 +10,12 @@ export interface Article {
   category: string;
   text: string;
   source?: string;
+  /** free-form search hints, e.g. ['bleeding', 'tourniquet'] */
+  tags?: string[];
+  /** disaster types this article applies to, e.g. ['typhoon', 'flood'] — used to filter retrieval */
+  disaster_types?: string[];
+  /** ISO date the content was last checked against its source */
+  last_verified?: string;
 }
 
 export interface Pack {
@@ -17,6 +23,9 @@ export interface Pack {
   name: string;
   version: number;
   license?: string;
+  /** ISO date the pack was built */
+  updated?: string;
+  keywords?: string[];
   articles: Article[];
 }
 
@@ -28,6 +37,9 @@ export interface Passage {
   category: string;
   text: string;
   source?: string;
+  tags?: string[];
+  disaster_types?: string[];
+  last_verified?: string;
 }
 
 // Tagalog / Taglish words -> English search terms. Add more!
@@ -92,13 +104,28 @@ let passages = new Map<string, Passage>();
 let loaded: Pack[] = [];
 
 /** Split long articles into ~600-char passages along paragraph boundaries. */
-function chunk(pack: Pack, a: Article): Passage[] {
+export function chunk(pack: Pack, a: Article): Passage[] {
   const paras = a.text.split(/\n\s*\n/);
   const out: Passage[] = [];
   let buf = '';
+  // Metadata every passage inherits from its article, so retrieval can filter and cite it.
+  const meta: Partial<Passage> = {
+    source: a.source,
+    ...(a.tags ? { tags: a.tags } : {}),
+    ...(a.disaster_types ? { disaster_types: a.disaster_types } : {}),
+    ...(a.last_verified ? { last_verified: a.last_verified } : {}),
+  };
   const flush = () => {
     if (!buf.trim()) return;
-    out.push({ id: `${pack.id}/${a.id}#${out.length}`, packId: pack.id, articleId: a.id, title: a.title, category: a.category, text: buf.trim(), source: a.source });
+    out.push({
+      id: `${pack.id}/${a.id}#${out.length}`,
+      packId: pack.id,
+      articleId: a.id,
+      title: a.title,
+      category: a.category,
+      text: buf.trim(),
+      ...meta,
+    });
     buf = '';
   };
   for (const p of paras) {
@@ -118,9 +145,19 @@ export async function loadKnowledge(): Promise<Pack[]> {
     try {
       packs.push(JSON.parse(await f.text()) as Pack);
     } catch {
+      // A pack that cannot be parsed is skipped, not fatal: the rest of the library still works.
       console.warn('Bad pack file', p.id);
     }
   }
+  indexPacks(packs);
+  return packs;
+}
+
+/**
+ * Build the search index from already-loaded packs. Pure, so tests can index fixtures
+ * without OPFS, and so reading files stays separate from indexing them.
+ */
+export function indexPacks(packs: Pack[]): { passages: number; articles: number } {
   const ms = new MiniSearch<Passage>({
     fields: ['title', 'category', 'text'],
     storeFields: ['id'],
@@ -132,7 +169,7 @@ export async function loadKnowledge(): Promise<Pack[]> {
   ms.addAll(all);
   index = ms;
   loaded = packs;
-  return packs;
+  return { passages: all.length, articles: packs.reduce((n, p) => n + p.articles.length, 0) };
 }
 
 export const loadedPacks = () => loaded;

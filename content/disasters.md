@@ -2,11 +2,14 @@
 id: disasters
 name: Disasters (Philippines)
 license: CC BY-SA 4.0, CollapseAI team. Based on PAGASA, PHIVOLCS and NDRRMC public guidance.
+last_verified: 2026-10-09
 ---
 
 # Typhoon: before, during and after
 category: Disasters
 source: Based on PAGASA / NDRRMC public guidance
+tags: typhoon, bagyo, storm, wind signal, go-bag
+disaster_types: typhoon, storm-surge, flood
 
 PAGASA Tropical Cyclone Wind Signals:
 - Signal 1: strong winds (39–61 km/h) expected within 36 hours. Minimal to minor threat.
@@ -26,6 +29,8 @@ After: watch for fallen power lines, damaged buildings, landslides and floodwate
 # Flood safety
 category: Disasters
 source: Based on NDRRMC / WHO flood guidance
+tags: flood, baha, moving water, leptospirosis, evacuation
+disaster_types: flood, typhoon
 
 - Move to higher ground or an upper floor early. Do not wait.
 - Turn off electricity at the main switch if you can do it safely (dry hands, dry place).
@@ -38,6 +43,8 @@ source: Based on NDRRMC / WHO flood guidance
 # Earthquake: Duck, Cover and Hold
 category: Disasters
 source: Based on PHIVOLCS earthquake preparedness guidance
+tags: earthquake, lindol, duck cover hold, aftershock, tsunami
+disaster_types: earthquake, tsunami
 
 During shaking:
 - DUCK under a sturdy table, COVER your head and neck, and HOLD on until the shaking stops.
@@ -57,6 +64,8 @@ Tsunami: if you are near the coast and the shaking is strong or long, or the sea
 # Volcanic eruption and ashfall
 category: Disasters
 source: Based on PHIVOLCS volcanic hazard guidance
+tags: volcano, bulkan, ashfall, abo, lahar, mask
+disaster_types: volcano
 
 - Follow PHIVOLCS alert levels and evacuate immediately when ordered. Lahars (volcanic mudflows) can travel far down river valleys, especially during heavy rain.
 - Stay indoors during ashfall. Close windows and doors; seal gaps with damp towels.
@@ -69,6 +78,8 @@ source: Based on PHIVOLCS volcanic hazard guidance
 # Go-bag and family plan
 category: Disasters
 source: Based on NDRRMC "Go Bag" guidance
+tags: go-bag, evacuation, family plan, emergency hotline, supplies
+disaster_types: typhoon, flood, earthquake, volcano
 
 Prepare a go-bag for each person, ready to grab in seconds:
 - Water (at least 4 liters per person per day for 3 days)
