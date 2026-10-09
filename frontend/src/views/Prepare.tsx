@@ -7,6 +7,7 @@ import { Icon, packIcon, plainLabel } from '../components/Icon';
 import { Status, type StatusState } from '../components/Status';
 import { cacheLabel, type SystemSnapshot } from '../ui/system';
 import { Skeleton } from '../components/Skeleton';
+import { InstallCard } from '../components/Install';
 
 const TIPS = [
   'Use Wi-Fi if you can. Big downloads can eat your mobile data.',
@@ -90,6 +91,7 @@ export default function Prepare({ downloads, online, onGoSurvive, system, modelN
 
   return (
     <div className="page-content prepare-page">
+      <InstallCard />
       <header className="page-intro"><span className="eyebrow">Prepare / System setup</span><h2>Set up for offline use.</h2><p>Download your model and knowledge while you have a connection.<br />Keep track of what is stored, cached, and actually loaded.</p></header>
       {!online && (
         <div className="banner warn" role="status"><Icon name="info" size={18} /><span className="banner-label">Offline</span><span>Connection errors will retry when the network returns. Paused downloads need Resume.</span></div>

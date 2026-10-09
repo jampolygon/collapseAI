@@ -9,6 +9,7 @@ import { Status } from './components/Status';
 import { useTheme, useMobile, type Theme } from './ui/theme';
 import { useSystemSnapshot } from './ui/system';
 import { Tooltip } from './components/Tooltip';
+import { InstallPrompt } from './components/Install';
 
 type Mode = 'prepare' | 'survive';
 
@@ -79,6 +80,7 @@ export default function App() {
   return (
     <div className={`app ${collapsed ? 'sidebar-collapsed' : ''} ${drawerOpen ? 'drawer-open' : ''}`}>
       <a className="skip-link" href="#main-content">Skip to content</a>
+      <InstallPrompt />
       {mobile && drawerOpen && <button className="drawer-backdrop" aria-label="Close navigation" onClick={() => setDrawerOpen(false)} tabIndex={-1} />}
       <aside id="app-navigation" ref={sidebarRef} className="sidebar" inert={mobile && !drawerOpen} role={mobile && drawerOpen ? 'dialog' : undefined} aria-modal={mobile && drawerOpen ? true : undefined} aria-label="Main navigation">
         <div className="sidebar-brand">
