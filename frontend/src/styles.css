@@ -375,3 +375,12 @@ strong, b { font-weight: 600; }
 .place-list li { display: flex; align-items: center; gap: 10px; padding: 10px 0; border-bottom: 1px solid var(--border); }
 .place-list li span:first-child { flex: 1; }
 @media (prefers-reduced-motion: reduce) { .compass .compass-rose { transition: none; } }
+
+/* Photo AI */
+.camera-tool { max-width: 720px; }
+.camera-btn { display: block; margin: 14px 0; cursor: pointer; }
+.as-button { display: flex; align-items: center; justify-content: center; gap: 8px; min-height: 46px; border-radius: var(--radius); border: 1px solid var(--border); background: var(--raised); font-weight: 500; }
+.as-button.primary { background: var(--contrast); color: var(--contrast-text); border-color: var(--contrast); }
+.camera-btn:focus-within .as-button { outline: 2px solid var(--contrast); outline-offset: 4px; }
+.photo { display: block; width: 100%; max-height: 50vh; object-fit: contain; border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface); margin-bottom: 12px; }
+.camera-ask { display: flex; flex-direction: column; gap: 10px; margin-bottom: 12px; }

@@ -48,6 +48,7 @@ export default function App() {
     { id: 'tools', label: 'Tools', icon: 'tools' },
     { id: 'map', label: 'Map', icon: 'compass' },
     { id: 'compass', label: 'Compass', icon: 'needle' },
+    { id: 'camera', label: 'Photo AI', icon: 'camera' },
   ];
   const navigate = (id: 'prepare' | Tab) => {
     if (id === 'prepare') setMode('prepare');
@@ -98,7 +99,7 @@ export default function App() {
 
       <div className="workspace" inert={mobile && drawerOpen}>
         <header className="workspace-header">
-          <div className="workspace-title">{mobile && <button ref={menuRef} className="icon-button" aria-label="Open navigation" aria-controls="app-navigation" aria-expanded={drawerOpen} onClick={() => setDrawerOpen(true)}><Icon name="menu" /></button>}<h1>{navigation.find(item => item.id === screen)?.label}</h1><span className="header-divider" /><span className="workspace-subtitle">{screen === 'ask' ? 'Local assistance' : screen === 'prepare' ? 'System setup' : screen === 'library' ? 'Downloaded knowledge' : screen === 'map' ? 'Offline maps' : screen === 'compass' ? 'Direction & places' : 'Field utilities'}</span></div>
+          <div className="workspace-title">{mobile && <button ref={menuRef} className="icon-button" aria-label="Open navigation" aria-controls="app-navigation" aria-expanded={drawerOpen} onClick={() => setDrawerOpen(true)}><Icon name="menu" /></button>}<h1>{navigation.find(item => item.id === screen)?.label}</h1><span className="header-divider" /><span className="workspace-subtitle">{screen === 'ask' ? 'Local assistance' : screen === 'prepare' ? 'System setup' : screen === 'library' ? 'Downloaded knowledge' : screen === 'map' ? 'Offline maps' : screen === 'compass' ? 'Direction & places' : screen === 'camera' ? 'Vision on this device' : 'Field utilities'}</span></div>
           <div className="header-statuses" aria-label="System status"><Status label="Local AI" value={modelName ?? 'Not loaded'} state={modelName ? 'ready' : 'pending'} /><Status label="Knowledge" value={knowledgeLoading ? 'Loading' : packs.length ? `${packs.length} loaded` : 'Missing'} state={knowledgeLoading ? 'busy' : packs.length ? 'ready' : 'pending'} loading={knowledgeLoading} /><Status label="Network" value={online ? 'Online' : 'Offline'} state={online ? 'ready' : 'pending'} /></div>
         </header>
         <main id="main-content" tabIndex={-1} className={`main-content screen-${screen}`}>
