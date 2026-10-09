@@ -33,7 +33,7 @@ CollapseAI is an AI assistant that lives on your phone or computer. Ask it thing
 - **Save space:** pick only the topics you need (First Aid, Survival, Disasters…). You can add more later.
 - **Don't clear your browser data.** That deletes the downloaded AI.
 - **No internet but a friend has the AI file?** Prepare → *Import a model file* (from SD card, USB or a file sent to you).
-- ⚕ CollapseAI is not a doctor. Use it when no help is available, and get professional help as soon as you can.
+- CollapseAI is not a doctor. Use it when no help is available, and get professional help as soon as you can.
 
 ---
 
