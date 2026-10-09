@@ -50,7 +50,9 @@ export async function validateStoredRegion(region: DownloadedMapRegion): Promise
   parseMapCatalog({ version: 1, updatedAt: region.updatedAt, attribution: '© OpenStreetMap contributors', regions: [{
     ...region, pmtilesUrl: `./maps/${region.id}.pmtiles`, tileSchema: 'protomaps-basemaps',
   }] });
-  await verifyArchive(region, region.blob);
+  // The full SHA-256 was checked when the map was downloaded. Re-hashing up to 256 MB on every
+  // visit is slow on phones, so stored maps get the cheap checks only (size, header, layers).
+  await verifyArchive(region, region.blob, undefined, region.sha256);
 }
 
 export async function listDownloadedRegions(onInvalid?: (message: string) => void): Promise<DownloadedMapRegion[]> {

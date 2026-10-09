@@ -54,13 +54,14 @@ describe('local archive verification', () => {
     await expect(verifyArchive(await metadata(corrupt), corrupt)).rejects.toThrow(/readable PMTiles/);
   });
 
-  it('rejects cancelled verification and missing secure-context hashing', async () => {
+  it('rejects cancelled verification and still verifies without crypto.subtle (plain http)', async () => {
     const region = await metadata();
     const controller = new AbortController();
     controller.abort();
     await expect(verifyArchive(region, fixture(), controller.signal)).rejects.toMatchObject({ name: 'AbortError' });
+    // Hashing uses a pure-JS SHA-256, so an insecure page (no crypto.subtle) must still verify.
     vi.stubGlobal('crypto', {});
-    await expect(verifyArchive(region, fixture())).rejects.toThrow(/secure context/);
+    await expect(verifyArchive(region, fixture())).resolves.toBeUndefined();
   });
 
   it('rejects out-of-file sections even with a matching published checksum', async () => {

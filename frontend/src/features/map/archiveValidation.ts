@@ -21,7 +21,6 @@ export async function verifyArchive(region: Pick<MapRegion, 'id' | 'sha256' | 'b
   if (!(blob instanceof Blob) || blob.size !== region.sizeBytes || blob.size === 0 || blob.size > mapArchiveLimit(region.id)) {
     throw new Error('Map verification failed: local archive is missing or has an invalid size.');
   }
-  if (!crypto.subtle) throw new Error('This browser cannot verify map downloads. Open CollapseAI in a secure context (HTTPS) and retry.');
   const actualHash = downloadedHash ?? await hashMapBlob(blob, signal);
   if (actualHash !== region.sha256) throw new Error('Map verification failed: the SHA-256 checksum does not match.');
   if ((region.id === 'philippines' || region.revision?.startsWith('sha256-')) && region.revision !== `sha256-${actualHash}`) {
