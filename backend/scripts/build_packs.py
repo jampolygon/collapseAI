@@ -157,7 +157,7 @@ def parse(path: Path, max_passage_chars: int = DEFAULT_MAX_PASSAGE,
         if ":" not in line:
             raise BuildError(f"{path}:{index + 1}: malformed header; expected key: value")
         key, value = (part.strip() for part in line.split(":", 1))
-        if key not in {"id", "name", "license", "version"}:
+        if key not in {"id", "name", "license", "version", "keywords", "updated", "last_verified"}:
             raise BuildError(f"{path}:{index + 1}: unknown header field {key!r}")
         if key in meta:
             raise BuildError(f"{path}:{index + 1}: duplicate header field {key!r}")
@@ -186,17 +186,30 @@ def parse(path: Path, max_passage_chars: int = DEFAULT_MAX_PASSAGE,
         seen[article_id] = line_number
         fields: dict[str, str] = {}
         cursor = start + 1
-        while cursor < stop and re.match(r"^(category|source):", body[cursor]):
+        while cursor < stop and re.match(r"^(category|source|tags|disaster_types|last_verified):", body[cursor]):
             key, value = body[cursor].split(":", 1)
             if key in fields:
                 raise BuildError(f"{path}:{end + 2 + cursor}: duplicate article field {key!r}")
             fields[key] = value.strip()
             cursor += 1
         nonempty(fields.get("category"), "category", f"{path}:{line_number} ({article_id})")
-        articles.append({"id": article_id, "title": title, "category": fields["category"],
-                         "source": fields.get("source", ""), "text": "\n".join(body[cursor:stop]).strip()})
+        article = {"id": article_id, "title": title, "category": fields["category"], "source": fields.get("source", "")}
+        for key in ("tags", "disaster_types"):
+            if fields.get(key):
+                article[key] = [value.strip() for value in fields[key].split(",") if value.strip()]
+        if fields.get("last_verified") or meta.get("last_verified"):
+            article["last_verified"] = fields.get("last_verified") or meta["last_verified"]
+        article["text"] = "\n".join(body[cursor:stop]).strip()
+        articles.append(article)
     pack = {"id": meta.get("id"), "name": meta.get("name"), "version": version,
-            "license": meta.get("license", ""), "articles": articles}
+            "license": meta.get("license", "")}
+    if meta.get("keywords"):
+        pack["keywords"] = [value.strip() for value in meta["keywords"].split(",") if value.strip()]
+    # Keep the existing Node format for sources that opted into its metadata.
+    # Prefer explicit source dates so unchanged content builds deterministically.
+    if meta.get("updated") or meta.get("last_verified"):
+        pack["updated"] = meta.get("updated") or meta["last_verified"]
+    pack["articles"] = articles
     validate_pack(pack, str(path), max_passage_chars, max_article_chars)
     return pack
 

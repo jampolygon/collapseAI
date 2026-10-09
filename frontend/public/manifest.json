@@ -5,48 +5,48 @@
     {
       "id": "disasters",
       "path": "/packs/disasters.json",
-      "size": 5418,
-      "sha256": "378d29932b5cf04d85ab4adf405e0fd71fc153a080a570fca7592ec92816870c",
+      "size": 6446,
+      "sha256": "6dbab019921d2cd4d10da18c6a9a93ba628dcbdf8b9109c328721cd54aaaa3d0",
       "articles": 5,
       "version": 1
     },
     {
       "id": "engineering",
       "path": "/packs/engineering.json",
-      "size": 3442,
-      "sha256": "cdc823946c58de4e2ea9ae1eb51355952e75d6f2096adf9f02e2302369cd01c8",
+      "size": 3604,
+      "sha256": "8f471835153b6644ba596233ee43d2938ac20823fb3a711d3c14380b9d6efb42",
       "articles": 4,
       "version": 1
     },
     {
       "id": "first-aid",
       "path": "/packs/first-aid.json",
-      "size": 9886,
-      "sha256": "6cc926ac5845cd6198facf564a4c0c7ff11d58e972c012ab2943689450ea9f4e",
+      "size": 11708,
+      "sha256": "6d1698d8ccc3818dd59e6b04cb30f6f9c81079c524599ce346c44c694f08317b",
       "articles": 10,
       "version": 1
     },
     {
       "id": "food",
       "path": "/packs/food.json",
-      "size": 3723,
-      "sha256": "35b796156c3e0cd9892a5ea97c0d5d978ced6867d6ad26fc66cc5720838073ca",
+      "size": 3919,
+      "sha256": "3527744d6573582b3d2f247594d7ac962d070e91ce0edf0fef6bc2a5a7e2a0af",
       "articles": 5,
       "version": 1
     },
     {
       "id": "medicine",
       "path": "/packs/medicine.json",
-      "size": 4984,
-      "sha256": "d8589be9a2f20a7d712518f4db4638a3527e7507cd1a68573b4cfec72f9ef151",
+      "size": 5214,
+      "sha256": "0d989077e005f73e4a0d8c00e54ba18b8ef75e67de49b1bd8605be14f7e9964d",
       "articles": 6,
       "version": 1
     },
     {
       "id": "survival",
       "path": "/packs/survival.json",
-      "size": 5623,
-      "sha256": "cf3a68be7ecb92e145993702570f5f1b0fc816da15a0659ac581e6a91e39580e",
+      "size": 5853,
+      "sha256": "8efe13bee81457d9a434bab15768dde31e5b724df4aaf17f15aa8efe47f5e646",
       "articles": 6,
       "version": 1
     }

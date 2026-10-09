@@ -4,19 +4,19 @@ import { copyFile, mkdir, readFile, stat, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { FileSource, PMTiles, TileType } from 'pmtiles';
 
-const MAX_ARCHIVE_BYTES = 1024 * 1024 * 1024;
+const MAX_ARCHIVE_BYTES = 256 * 1024 * 1024;
 const REQUIRED_LAYERS = ['earth', 'landcover', 'landuse', 'roads', 'water', 'buildings', 'boundaries', 'pois', 'places'];
 const BUILD_BOUNDS = [116.8, 4.4, 126.8, 21.3];
 const PHILIPPINES_COVERAGE = [116.9, 4.5, 126.7, 21.2];
-const [archivePath, outputDirectory, distribution = 'local'] = process.argv.slice(2);
+const [archivePath, outputDirectory, distribution = 'local', catalogPath] = process.argv.slice(2);
 
 if (!archivePath || !outputDirectory || !['local', 'release'].includes(distribution)) {
-  throw new Error('Usage: node prepare-offline-map-release.mjs <philippines.pmtiles> <output-directory> [local|release]');
+  throw new Error('Usage: node prepare-offline-map-release.mjs <philippines.pmtiles> <output-directory> [local|release] [catalog-path]');
 }
 
 const archiveSize = (await stat(archivePath)).size;
 if (archiveSize <= 0 || archiveSize > MAX_ARCHIVE_BYTES) {
-  throw new Error(`PMTiles archive size ${archiveSize} is invalid or exceeds the app limit of ${MAX_ARCHIVE_BYTES} bytes (1 GiB).`);
+  throw new Error(`PMTiles archive size ${archiveSize} is invalid or exceeds the country map limit of ${MAX_ARCHIVE_BYTES} bytes (256 MiB).`);
 }
 
 const bytes = await readFile(archivePath);
@@ -61,6 +61,10 @@ const missingLayers = REQUIRED_LAYERS.filter(layer => !availableLayers.has(layer
 if (missingLayers.length) throw new Error(`Generated archive is incompatible with the app style; missing layers: ${missingLayers.join(', ')}.`);
 
 const outputPmtiles = path.join(outputDirectory, 'philippines.pmtiles');
+const catalogOutput = catalogPath ?? path.join(outputDirectory, 'regions.json');
+if ([path.resolve(archivePath), path.resolve(outputPmtiles)].includes(path.resolve(catalogOutput))) {
+  throw new Error('Catalog path must not overwrite a PMTiles archive.');
+}
 await mkdir(outputDirectory, { recursive: true });
 if (path.resolve(archivePath) !== path.resolve(outputPmtiles)) await copyFile(archivePath, outputPmtiles);
 const checksum = createHash('sha256').update(bytes).digest('hex');
@@ -82,7 +86,8 @@ const catalog = {
     tileSchema: 'protomaps-basemaps',
   }],
 };
-await writeFile(path.join(outputDirectory, 'regions.json'), `${JSON.stringify(catalog, null, 2)}\n`, 'utf8');
+await mkdir(path.dirname(catalogOutput), { recursive: true });
+await writeFile(catalogOutput, `${JSON.stringify(catalog, null, 2)}\n`, 'utf8');
 console.log(`Validated PMTiles v3 archive: ${archiveSize} bytes, sha256 ${checksum}`);
 console.log(`Validated region bounds: ${catalog.regions[0].bounds.join(', ')}`);
 console.log(`Validated Philippines coverage envelope: ${PHILIPPINES_COVERAGE.join(', ')}`);

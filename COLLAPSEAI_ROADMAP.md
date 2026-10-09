@@ -150,11 +150,11 @@ Expand the existing tools area into a real emergency toolkit.
 Research and implement an offline-first map system using open data where licensing permits.
 
 **Implementation status:** the Map navigation, local MapLibre/PMTiles renderer, region selection,
-GPS permission flow, archive verification and IndexedDB storage are in place. The app accesses
-`regions.json` and the Philippines PMTiles file on the `offline-maps-v1` GitHub Release through a
-same-origin proxy because browser CORS blocks direct GitHub Release asset requests;
-that release and its real archive have not been published, so the UI must continue to report that
-coverage as unavailable until the catalog contains verified metadata. Emergency POIs remain empty
+GPS/map-click selection, archive verification and IndexedDB storage are in place. One catalog
+at `/offline-maps/regions.json` supports Luzon, Visayas, Mindanao and an optional Philippines
+archive, obtained from frontend-local files, the optional LAN Hub, or an opt-in release proxy.
+The release workflows prepare/validate Philippines assets; actual files and real-device checks
+are still required. Coverage remains unavailable until an archive is verified and stored. POIs remain empty
 until sourced and verified. Offline routing, arbitrary-area downloads, live hazards, and saved
 locations are not implemented.
 

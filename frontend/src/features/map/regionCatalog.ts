@@ -1,10 +1,19 @@
 import { PHILIPPINES_COVERAGE_BOUNDS, type MapBounds, type MapCatalog, type MapCenter, type MapRegion } from './mapTypes';
-import { MAX_MAP_ARCHIVE_BYTES } from './mapTypes';
+import { mapArchiveLimit } from './mapTypes';
 
-const MAP_ASSET_BASE = import.meta.env.DEV
-  ? '/maps/'
-  : `${import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL : `${import.meta.env.BASE_URL}/`}offline-maps/`;
+const MAP_ASSET_BASE = `${import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL : `${import.meta.env.BASE_URL}/`}offline-maps/`;
 export const MAP_CATALOG_URL = `${MAP_ASSET_BASE}regions.json`;
+
+// Intended coverage, not a claim that any archive exists.
+export const EXPECTED_MAP_REGIONS = [
+  { id: 'luzon', name: 'Luzon' },
+  { id: 'visayas', name: 'Visayas' },
+  { id: 'mindanao', name: 'Mindanao' },
+] as const;
+
+export function resolveMapAssetUrl(path: string, base = new URL(import.meta.env.BASE_URL, document.baseURI).href): string {
+  return new URL(path.replace(/^(?:\.\/|\/)/, ''), base).href;
+}
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
@@ -31,7 +40,6 @@ function parseRegion(value: unknown): MapRegion {
   if (!isRecord(value)) throw new Error('Map catalog contains an invalid region entry.');
   const { id, name, province, pmtilesUrl, sizeBytes, sha256, bounds, center, revision, updatedAt, tileSchema } = value;
   if (typeof id !== 'string' || !/^[a-z0-9-]{2,64}$/.test(id)) throw new Error('Map catalog contains an invalid region ID.');
-  if (id !== 'philippines') throw new Error(`Map catalog contains an unsupported region ID "${id}".`);
   if (typeof name !== 'string' || !name.trim() || typeof province !== 'string' || !province.trim()) {
     throw new Error(`Map region "${id}" is missing its name or province.`);
   }
@@ -40,21 +48,22 @@ function parseRegion(value: unknown): MapRegion {
   if (typeof pmtilesUrl !== 'string' || !validAssetUrl) {
     throw new Error(`Map region "${id}" must point to its matching same-origin map asset "${id}.pmtiles".`);
   }
-  if (!Number.isSafeInteger(sizeBytes) || (sizeBytes as number) <= 0 || (sizeBytes as number) > MAX_MAP_ARCHIVE_BYTES) {
-    throw new Error(`Map region "${id}" has an invalid size or exceeds the 1 GiB download limit.`);
+  if (!Number.isSafeInteger(sizeBytes) || (sizeBytes as number) <= 0 || (sizeBytes as number) > mapArchiveLimit(id)) {
+    throw new Error(`Map region "${id}" has an invalid size or exceeds the ${mapArchiveLimit(id) / 1024 ** 2} MiB download limit.`);
   }
   if (typeof sha256 !== 'string' || !/^[a-f0-9]{64}$/i.test(sha256)) {
     throw new Error(`Map region "${id}" is missing a valid SHA-256 checksum.`);
   }
   if (!isBounds(bounds)) throw new Error(`Map region "${id}" has invalid geographic bounds.`);
-  if (!covers(bounds, PHILIPPINES_COVERAGE_BOUNDS)) {
+  if (id === 'philippines' && !covers(bounds, PHILIPPINES_COVERAGE_BOUNDS)) {
     throw new Error(`Map region "${id}" bounds do not cover the required Philippines coverage envelope.`);
   }
   if (!isCenter(center, bounds)) throw new Error(`Map region "${id}" has an invalid center point.`);
   if (typeof updatedAt !== 'string' || Number.isNaN(Date.parse(updatedAt))) {
     throw new Error(`Map region "${id}" has an invalid update date.`);
   }
-  if (typeof revision !== 'string' || revision !== `sha256-${String(sha256).toLowerCase()}`) {
+  if (typeof revision !== 'string' || !/^[a-zA-Z0-9._-]{1,80}$/.test(revision) ||
+      ((id === 'philippines' || revision.startsWith('sha256-')) && revision !== `sha256-${sha256.toLowerCase()}`)) {
     throw new Error(`Map region "${id}" revision does not match its SHA-256 checksum.`);
   }
   if (tileSchema !== 'protomaps-basemaps') throw new Error(`Map region "${id}" uses an unsupported tile schema.`);
@@ -99,13 +108,11 @@ export async function loadMapCatalog(signal?: AbortSignal): Promise<MapCatalog> 
     response = await fetch(MAP_CATALOG_URL, { signal: requestSignal, cache: 'no-store' });
   } catch (error) {
     if (signal?.aborted) throw error;
-    if (timeout.aborted) throw new Error('Timed out while checking the offline-map release. Check your connection and retry.');
-    throw new Error(`Could not reach the same-origin offline-map release route: ${error instanceof Error ? error.message : 'network error'}`);
+    if (timeout.aborted) throw new Error('Timed out while checking the map source. Check your local network or source and retry.');
+    throw new Error(`Could not reach the same-origin map catalog: ${error instanceof Error ? error.message : 'network error'}`);
   }
   if (response.status === 404) {
-    throw new Error(import.meta.env.DEV
-      ? 'Local map catalog asset "public/maps/regions.json" was not found. Generate the local catalog after placing the validated archive there.'
-      : 'Offline map catalog asset "regions.json" has not been published in the offline-maps-v1 GitHub Release.');
+    return { version: 1, updatedAt: '1970-01-01T00:00:00Z', attribution: '© OpenStreetMap contributors', regions: [] };
   }
   if (!response.ok) throw new Error(`Could not load the offline-map catalog (HTTP ${response.status}).`);
   let value: unknown;

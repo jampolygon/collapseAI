@@ -1,5 +1,5 @@
-import { describe, expect, it } from 'vitest';
-import { parseMapCatalog, regionContains } from './regionCatalog';
+import { afterEach, describe, expect, it, vi } from 'vitest';
+import { EXPECTED_MAP_REGIONS, loadMapCatalog, parseMapCatalog, regionContains, resolveMapAssetUrl } from './regionCatalog';
 import { createOfflineMapStyle } from './mapStyle';
 import type { MapRegion } from './mapTypes';
 
@@ -24,6 +24,8 @@ const catalog = (regions: MapRegion[]) => ({
   regions,
 });
 
+afterEach(() => vi.unstubAllGlobals());
+
 describe('offline map catalog', () => {
   it('accepts a valid, published region manifest', () => {
     expect(parseMapCatalog(catalog([region]))).toEqual(catalog([region]));
@@ -33,12 +35,15 @@ describe('offline map catalog', () => {
     expect(() => parseMapCatalog(catalog([{ ...region, pmtilesUrl: 'https://example.com/philippines.pmtiles' }]))).toThrow(/same-origin/);
     expect(() => parseMapCatalog(catalog([{ ...region, pmtilesUrl: './offline-maps/metro-manila.pmtiles' }]))).toThrow(/philippines\.pmtiles/);
     expect(() => parseMapCatalog(catalog([{ ...region, sizeBytes: 0 }]))).toThrow(/size/);
-    expect(parseMapCatalog(catalog([{ ...region, sizeBytes: 1024 ** 3 }])).regions[0].sizeBytes).toBe(1024 ** 3);
-    expect(() => parseMapCatalog(catalog([{ ...region, sizeBytes: 1024 ** 3 + 1 }]))).toThrow(/1 GiB/);
+    expect(parseMapCatalog(catalog([{ ...region, sizeBytes: 256 * 1024 ** 2 }])).regions[0].sizeBytes).toBe(256 * 1024 ** 2);
+    expect(() => parseMapCatalog(catalog([{ ...region, sizeBytes: 256 * 1024 ** 2 + 1 }]))).toThrow(/256 MiB/);
   });
 
-  it('accepts only the Philippines region covered by the release proxy', () => {
-    expect(() => parseMapCatalog(catalog([{ ...region, id: 'metro-manila' }]))).toThrow(/unsupported region ID/);
+  it('accepts regional Hub catalogs without applying country-wide coverage requirements', () => {
+    for (const id of ['luzon', 'visayas', 'mindanao', 'metro-manila']) {
+      expect(parseMapCatalog(catalog([{ ...region, id, pmtilesUrl: `./maps/${id}.pmtiles`, bounds: [120, 14, 122, 16], center: [121, 15], revision: 'fixture' }])).regions[0].id).toBe(id);
+    }
+    expect(() => parseMapCatalog(catalog([{ ...region, id: 'luzon', pmtilesUrl: './maps/luzon.pmtiles', sizeBytes: 128 * 1024 ** 2 + 1 }]))).toThrow(/128 MiB/);
   });
 
   it('requires the revision to match the archive checksum', () => {
@@ -47,6 +52,31 @@ describe('offline map catalog', () => {
 
   it('rejects duplicate region IDs', () => {
     expect(() => parseMapCatalog(catalog([region, region]))).toThrow(/duplicate region IDs/);
+  });
+
+  it('keeps all intended regions without inventing file metadata', () => {
+    expect(EXPECTED_MAP_REGIONS).toEqual([{ id: 'luzon', name: 'Luzon' }, { id: 'visayas', name: 'Visayas' }, { id: 'mindanao', name: 'Mindanao' }]);
+    expect(parseMapCatalog(catalog([])).regions).toEqual([]);
+  });
+
+  it('resolves legacy and Hub URLs against the app base, including subpaths', () => {
+    expect(resolveMapAssetUrl('./maps/luzon.pmtiles', 'https://device.test/app/')).toBe('https://device.test/app/maps/luzon.pmtiles');
+    expect(resolveMapAssetUrl('/offline-maps/metro-manila.pmtiles', 'https://device.test/app/')).toBe('https://device.test/app/offline-maps/metro-manila.pmtiles');
+    expect(parseMapCatalog(catalog([{ ...region, id: 'luzon', pmtilesUrl: './maps/luzon.pmtiles' }])).regions[0].pmtilesUrl).toBe('./maps/luzon.pmtiles');
+  });
+
+  it('handles an absent catalog without claiming maps are available', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response('', { status: 404 })));
+    expect((await loadMapCatalog()).regions).toEqual([]);
+  });
+
+  it('rejects path traversal, unsafe URLs, bounds, centers and missing hashes', () => {
+    for (const pmtilesUrl of ['./maps/../luzon.pmtiles', '//example.test/maps/luzon.pmtiles', './maps/luzon.pmtiles?remote=1']) {
+      expect(() => parseMapCatalog(catalog([{ ...region, pmtilesUrl }]))).toThrow();
+    }
+    expect(() => parseMapCatalog(catalog([{ ...region, bounds: [121, 14, 120, 15] }]))).toThrow(/bounds/);
+    expect(() => parseMapCatalog(catalog([{ ...region, center: [0, 0] }]))).toThrow(/center/);
+    expect(() => parseMapCatalog(catalog([{ ...region, sha256: '' }]))).toThrow(/SHA-256/);
   });
 });
 

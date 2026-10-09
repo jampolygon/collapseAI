@@ -1,8 +1,8 @@
 # CollapseAI backend tooling
 
-This folder contains the Python knowledge pack builder and its Markdown sources.
-The application runs offline in the browser; there is currently no HTTP API,
-database, cloud inference service, or LAN hub server to start.
+This folder contains knowledge pack tooling, the evaluation harness, map
+provisioning tooling and an optional FastAPI LAN Hub. The core application runs
+offline in the browser without any backend service.
 
 Requires Python 3.10 or newer. The builder uses only the standard library.
 
@@ -27,7 +27,9 @@ Their URLs remain `packs/<id>.json` in the app; the new manifest is not consumed
 The shared format is defined by `Pack` and `Article` in
 `../frontend/src/lib/knowledge.ts`.
 
-A LAN hub is a future feature described in `../PLAN.md`; add it here if implemented.
+See [hub/README.md](hub/README.md) for optional local file serving and llama-server
+proxying, and [../docs/OFFLINE_MAPS.md](../docs/OFFLINE_MAPS.md) for the existing
+map architecture, fixes, extraction and remaining device tests.
 
 Pack Builder v2 validates required fields, duplicate IDs, source syntax, and
 configurable article/passage limits. See [scripts/README.md](scripts/README.md)

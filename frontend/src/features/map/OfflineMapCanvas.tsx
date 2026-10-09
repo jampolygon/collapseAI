@@ -5,7 +5,8 @@ import type { Theme } from '../../ui/theme';
 import type { DownloadedMapRegion, EmergencyPoi, MapCenter } from './mapTypes';
 import { EMERGENCY_POIS } from './emergencyPois';
 import { createOfflineMapStyle } from './mapStyle';
-import { registerDownloadedArchive, registerPmtilesProtocol } from './mapRuntime';
+import { regionContains } from './regionCatalog';
+import { registerDownloadedArchive, registerPmtilesProtocol, unregisterDownloadedArchive } from './mapRuntime';
 import 'maplibre-gl/dist/maplibre-gl.css';
 
 interface Props {
@@ -49,22 +50,30 @@ export default function OfflineMapCanvas({ region, theme, location, onLocationSe
     if (!container) return;
     registerPmtilesProtocol();
     const sourceUrl = registerDownloadedArchive(region);
-    const map = new maplibregl.Map({
-      container,
-      style: createOfflineMapStyle(sourceUrl, theme),
-      center: region.center,
-      zoom: 4.6,
-      maxZoom: 13,
-      maxBounds: [
-        [region.bounds[0] - 0.1, region.bounds[1] - 0.1],
-        [region.bounds[2] + 0.1, region.bounds[3] + 0.1],
-      ],
-      attributionControl: { compact: true },
-      localIdeographFontFamily: 'sans-serif',
-    });
-    mapRef.current = map;
     setMapReady(false);
     setMapError(null);
+    let map: maplibregl.Map;
+    try {
+      map = new maplibregl.Map({
+        container,
+        style: createOfflineMapStyle(sourceUrl, theme),
+        center: region.center,
+        zoom: region.id === 'philippines' ? 4.6 : 11,
+        maxZoom: region.id === 'philippines' ? 13 : 22,
+        maxBounds: [
+          [region.bounds[0] - 0.1, region.bounds[1] - 0.1],
+          [region.bounds[2] + 0.1, region.bounds[3] + 0.1],
+        ],
+        attributionControl: { compact: true },
+        localIdeographFontFamily: 'sans-serif',
+      });
+    } catch (error) {
+      unregisterDownloadedArchive(sourceUrl);
+      setMapError(`Could not open the offline renderer: ${error instanceof Error ? error.message : 'WebGL is unavailable'}`);
+      return;
+    }
+    mapRef.current = map;
+    map.fitBounds([[region.bounds[0], region.bounds[1]], [region.bounds[2], region.bounds[3]]], { padding: 24, duration: 0 });
 
     map.addControl(new maplibregl.NavigationControl({ showCompass: true }), 'top-right');
     map.on('load', () => {
@@ -110,6 +119,7 @@ export default function OfflineMapCanvas({ region, theme, location, onLocationSe
     return () => {
       resizeObserver.disconnect();
       map.remove();
+      unregisterDownloadedArchive(sourceUrl);
       mapRef.current = null;
     };
   }, [region, theme, onLocationSelect]);
@@ -119,8 +129,8 @@ export default function OfflineMapCanvas({ region, theme, location, onLocationSe
     if (!map || !mapReady) return;
     const source = map.getSource('collapseai-user-location') as maplibregl.GeoJSONSource | undefined;
     source?.setData(locationCollection(location));
-    if (location) map.flyTo({ center: location, zoom: Math.max(map.getZoom(), 13), duration: 500 });
-  }, [location, mapReady]);
+    if (location && regionContains(region, location)) map.flyTo({ center: location, zoom: Math.max(map.getZoom(), 13), duration: 500 });
+  }, [location, mapReady, region]);
 
   return (
     <section className="offline-map-frame" aria-label={`Offline map of ${region.name}`}>

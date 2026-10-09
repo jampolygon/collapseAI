@@ -23,6 +23,6 @@
     "packs": "node backend/scripts/build-packs.mjs",
     "packs:check": "node backend/scripts/build-packs.mjs --check",
     "packs:py": "python backend/scripts/build_packs.py",
-    "maps:catalog": "node frontend/scripts/prepare-offline-map-release.mjs public/maps/philippines.pmtiles public/maps local"
+    "maps:catalog": "node frontend/scripts/prepare-offline-map-release.mjs frontend/public/maps/philippines.pmtiles frontend/public/maps local frontend/public/offline-maps/regions.json"
   }
 }

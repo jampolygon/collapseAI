@@ -5,6 +5,7 @@ import type { DownloadedMapRegion } from './mapTypes';
 
 export const pmtilesProtocol = new Protocol();
 let protocolRegistered = false;
+let archiveSequence = 0;
 maplibregl.setWorkerUrl(mapLibreWorkerUrl);
 
 export function registerPmtilesProtocol(): void {
@@ -14,9 +15,14 @@ export function registerPmtilesProtocol(): void {
 }
 
 export function registerDownloadedArchive(region: DownloadedMapRegion): string {
-  const file = new File([region.blob], `${region.id}-${region.revision}.pmtiles`, {
+  const file = new File([region.blob], `${region.id}-${region.revision}-${archiveSequence++}.pmtiles`, {
     type: 'application/vnd.pmtiles',
   });
   pmtilesProtocol.add(new PMTiles(new FileSource(file)));
   return `pmtiles://${file.name}`;
+}
+
+export function unregisterDownloadedArchive(url: string): void {
+  // pmtiles 4.x exposes its registry but has no public remove method.
+  pmtilesProtocol.tiles.delete(url.replace(/^pmtiles:\/\//, ''));
 }

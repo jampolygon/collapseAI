@@ -1,4 +1,6 @@
 import type { DownloadedMapRegion } from './mapTypes';
+import { parseMapCatalog } from './regionCatalog';
+import { verifyArchive } from './archiveValidation';
 
 const DATABASE = 'collapseai-offline-maps';
 const VERSION = 1;
@@ -13,9 +15,13 @@ function openDatabase(): Promise<IDBDatabase> {
         request.result.createObjectStore(STORE, { keyPath: 'id' });
       }
     };
-    request.onsuccess = () => resolve(request.result);
+    let blocked = false;
+    request.onsuccess = () => {
+      if (blocked) request.result.close();
+      else resolve(request.result);
+    };
     request.onerror = () => reject(new Error(`Could not open local map storage: ${request.error?.message ?? 'unknown error'}`));
-    request.onblocked = () => reject(new Error('Local map storage is busy in another tab. Close other CollapseAI tabs and retry.'));
+    request.onblocked = () => { blocked = true; reject(new Error('Local map storage is busy in another tab. Close other CollapseAI tabs and retry.')); };
   });
 }
 
@@ -40,9 +46,25 @@ async function withStore<T>(
   }
 }
 
-export async function listDownloadedRegions(): Promise<DownloadedMapRegion[]> {
+export async function validateStoredRegion(region: DownloadedMapRegion): Promise<void> {
+  parseMapCatalog({ version: 1, updatedAt: region.updatedAt, attribution: '© OpenStreetMap contributors', regions: [{
+    ...region, pmtilesUrl: `./maps/${region.id}.pmtiles`, tileSchema: 'protomaps-basemaps',
+  }] });
+  await verifyArchive(region, region.blob);
+}
+
+export async function listDownloadedRegions(onInvalid?: (message: string) => void): Promise<DownloadedMapRegion[]> {
   const records = await withStore<DownloadedMapRegion[]>('readonly', store => store.getAll());
-  return records.sort((a, b) => a.name.localeCompare(b.name));
+  const valid: DownloadedMapRegion[] = [];
+  for (const record of records) {
+    try {
+      await validateStoredRegion(record);
+      valid.push(record);
+    } catch (error) {
+      onInvalid?.(`Stored map ${record?.name ?? record?.id ?? '(unknown)'} cannot be opened: ${error instanceof Error ? error.message : 'invalid archive'}. Download it again to replace it.`);
+    }
+  }
+  return valid.sort((a, b) => a.name.localeCompare(b.name));
 }
 
 export async function getDownloadedRegion(id: string): Promise<DownloadedMapRegion | undefined> {

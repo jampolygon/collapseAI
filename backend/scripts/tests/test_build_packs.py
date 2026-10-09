@@ -31,6 +31,20 @@ class ValidationTests(unittest.TestCase):
     def test_valid_pack(self):
         builder.validate_pack(valid_pack(), "fixture")
 
+    def test_preserves_current_node_metadata_with_explicit_dates(self):
+        with tempfile.TemporaryDirectory() as temp:
+            path = Path(temp) / "valid.md"
+            text = markdown().replace("license: Team content", "license: Team content\nlast_verified: 2026-10-09\nkeywords: water, tubig")
+            text = text.replace("source: Team reference", "source: Team reference\ntags: water, tubig\ndisaster_types: flood")
+            path.write_text(text, encoding="utf-8")
+            pack = builder.parse(path)
+            self.assertEqual(pack["updated"], "2026-10-09")
+            self.assertEqual(pack["keywords"], ["water", "tubig"])
+            self.assertEqual(pack["articles"][0]["tags"], ["water", "tubig"])
+            self.assertEqual(pack["articles"][0]["disaster_types"], ["flood"])
+            self.assertEqual(pack["articles"][0]["last_verified"], "2026-10-09")
+            self.assertEqual(pack["articles"][0]["text"], "Useful guidance.")
+
     def test_articles_must_be_an_array_and_nonempty(self):
         for value in [None, {}, "articles", []]:
             pack = valid_pack()
