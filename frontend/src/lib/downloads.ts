@@ -209,6 +209,7 @@ async function pump() {
 function friendlyError(e: any): string {
   const m = String(e?.message || e);
   if (typeof window !== 'undefined' && !window.isSecureContext) return 'This page is open over plain http, so the browser blocks saving files. Open the https link and try again.';
+  if (/file changed on the server/.test(m)) return m;
   if (/QuotaExceeded|quota/i.test(m)) return 'Storage is full. Free up space and tap Resume.';
   if (!navigator.onLine) return 'No connection. It will resume automatically when you are back online.';
   if (/404/.test(m)) return 'File not found on the server.';
@@ -242,8 +243,16 @@ async function run(item: DLItem, signal: AbortSignal) {
   const { url, source } = sourceUrl(item);
   const res = await fetch(url, { signal, headers: offset > 0 ? { Range: `bytes=${offset}-` } : {} });
   if (res.status === 416) {
-    patch(item.key, { status: 'done', done: offset, total: offset, source, speed: 0 });
-    return;
+    // 416 only means "done" if the server's real length equals what we already hold.
+    const size = Number(/\/(\d+)\s*$/.exec(res.headers.get('content-range') ?? '')?.[1]);
+    if (offset > 0 && size === offset) {
+      patch(item.key, { status: 'done', done: offset, total: offset, source, speed: 0 });
+      return;
+    }
+    // The file changed on the server (or the saved parts do not fit it): start clean next time.
+    for (const p of parts) await d.removeEntry(p.name).catch(() => {});
+    patch(item.key, { done: 0 });
+    throw new Error('The file changed on the server. Tap Resume to download it again.');
   }
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
   if (res.status !== 206 && offset > 0) {
@@ -297,6 +306,8 @@ async function run(item: DLItem, signal: AbortSignal) {
       }
     }
     if (w) await closePart();
+    // A stream that ended early (dropped connection without an error) must not count as finished.
+    if (len && done !== total) throw new Error(`Incomplete download: ${done} of ${total} bytes`);
   } catch (e) {
     // drop the unfinished part's writer; its bytes are re-downloaded on resume
     await w?.abort?.().catch(() => {});
