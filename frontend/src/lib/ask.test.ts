@@ -5,7 +5,7 @@ import { indexPacks, search, type Pack } from './knowledge';
 
 // The real, built packs: these tests guard the "hello gives random survival tips" bug.
 beforeAll(() => {
-  const ids = ['first-aid', 'survival', 'disasters', 'medicine', 'food', 'engineering', 'wikipedia-essentials', 'wikipedia-prepared'];
+  const ids = ['first-aid', 'survival', 'disasters', 'medicine', 'food', 'engineering', 'wikipedia-essentials', 'wikipedia-prepared', 'wikipedia-full'];
   indexPacks(ids.map((id) => JSON.parse(readFileSync(`public/packs/${id}.json`, 'utf8')) as Pack));
 });
 

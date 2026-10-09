@@ -150,6 +150,7 @@ export const PACKS: PackEntry[] = [
   { id: 'engineering', name: 'Engineering & Power', icon: '🔧', url: 'packs/engineering.json', sizeMB: packSizeMB('engineering', 40), blurb: 'Solar & batteries, water filters, simple tools, radio, repairs.' },
   { id: 'wikipedia-essentials', name: 'Wikipedia Essentials', icon: '📖', url: 'packs/wikipedia-essentials.json', sizeMB: packSizeMB('wikipedia-essentials', 0.7), blurb: 'Encyclopedia articles for the first days (CC BY-SA): first aid, water, shelter, disasters.' },
   { id: 'wikipedia-prepared', name: 'Wikipedia Prepared', icon: '📚', url: 'packs/wikipedia-prepared.json', sizeMB: packSizeMB('wikipedia-prepared', 1.7), blurb: 'More encyclopedia articles for weeks without help (CC BY-SA): illness, medicine, food, farming, tools.' },
+  { id: 'wikipedia-full', name: 'Wikipedia Full Survival', icon: '🏛️', url: 'packs/wikipedia-full.json', sizeMB: packSizeMB('wikipedia-full', 3.2), blurb: 'The largest encyclopedia set (CC BY-SA): rebuilding, engineering, agriculture, chemistry, long-term health.' },
 ];
 
 export interface Kit {

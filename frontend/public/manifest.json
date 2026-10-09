@@ -59,6 +59,14 @@
       "version": 1
     },
     {
+      "id": "wikipedia-full",
+      "path": "/packs/wikipedia-full.json",
+      "size": 3149558,
+      "sha256": "f91253ddd7169ec7e8b6fd9460d5a63813d8f135247326a5b1550067cba594a1",
+      "articles": 275,
+      "version": 1
+    },
+    {
       "id": "wikipedia-prepared",
       "path": "/packs/wikipedia-prepared.json",
       "size": 1651288,
@@ -69,9 +77,9 @@
   ],
   "models": [
     {
-      "id": "lfm25-350m",
+      "id": "smollm2-360m",
       "name": "Ember",
-      "url": "https://huggingface.co/LiquidAI/LFM2.5-350M-GGUF/resolve/main/LFM2.5-350M-Q4_K_M.gguf",
+      "url": "https://huggingface.co/HuggingFaceTB/SmolLM2-360M-Instruct-GGUF/resolve/main/smollm2-360m-instruct-q8_0.gguf",
       "size": null,
       "sha256": null
     },

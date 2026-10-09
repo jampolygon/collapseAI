@@ -12,7 +12,7 @@ from benchmark import EvalError, read_json
 RETRIEVER = "python-bm25-approx-v1"
 FIELDS = {"title": 3.0, "category": 1.5, "text": 1.0}
 # Mirrors frontend/src/lib/knowledge.ts: general reference packs rank below the team-written guides.
-REFERENCE_PACKS = {"wikipedia-essentials", "wikipedia-prepared"}
+REFERENCE_PACKS = {"wikipedia-essentials", "wikipedia-prepared", "wikipedia-full"}
 REFERENCE_WEIGHT = 0.4
 
 

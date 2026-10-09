@@ -219,7 +219,7 @@ class BuildTests(unittest.TestCase):
         text = builder.CATALOG.read_text(encoding="utf-8")
         with tempfile.TemporaryDirectory() as directory:
             path = Path(directory) / "catalog.ts"
-            for content in ["not a catalog", text.replace("id: 'qwen35-0.8b'", "id: 'lfm25-350m'"), text.replace("${HF}/LiquidAI/LFM2.5-350M", "${UNSUPPORTED}/LiquidAI/LFM2.5-350M"), text.replace("https://huggingface.co", "https://[invalid")]:
+            for content in ["not a catalog", text.replace("id: 'qwen35-0.8b'", "id: 'smollm2-360m'"), text.replace("${HF}/HuggingFaceTB/SmolLM2-360M", "${UNSUPPORTED}/HuggingFaceTB/SmolLM2-360M"), text.replace("https://huggingface.co", "https://[invalid")]:
                 path.write_text(content, encoding="utf-8")
                 with self.assertRaisesRegex(builder.BuildError, "catalog.ts"):
                     builder.catalog_models(path)
