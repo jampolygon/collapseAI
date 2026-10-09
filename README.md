@@ -62,6 +62,8 @@ npm run dev:phone
 2. In the terminal, find the **Network** line, e.g. `https://192.168.1.23:5173`, and open it in Chrome on your phone.
 3. Chrome will say *"Your connection is not private"*. That's expected (it's your own computer). Tap **Advanced → Proceed**.
 
+> **This is for looking at the UI only.** Chrome does not allow a service worker (offline mode) on a page whose certificate it rejected, so maps and airplane-mode tests will not work this way. For real offline testing use the deployed https link, or on the phone open `chrome://flags/#unsafely-treat-insecure-origin-as-secure`, add your `http://192.168.x.x:4173` address (from `npm run preview`), enable it and relaunch Chrome.
+
 > Windows may ask to allow Node.js through the firewall. Click **Allow**.
 
 ### Branches (who works where)

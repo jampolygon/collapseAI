@@ -101,6 +101,9 @@ export default function App() {
           <div className="header-statuses" aria-label="System status"><Status label="Local AI" value={modelName ?? 'Not loaded'} state={modelName ? 'ready' : 'pending'} /><Status label="Knowledge" value={knowledgeLoading ? 'Loading' : packs.length ? `${packs.length} loaded` : 'Missing'} state={knowledgeLoading ? 'busy' : packs.length ? 'ready' : 'pending'} loading={knowledgeLoading} /><Status label="Network" value={online ? 'Online' : 'Offline'} state={online ? 'ready' : 'pending'} /></div>
         </header>
         <main id="main-content" tabIndex={-1} className={`main-content screen-${screen}`}>
+        {!window.isSecureContext && (
+          <div className="banner warn" role="alert"><Icon name="info" size={18} /><span className="banner-label">Not secure</span><span>This page is open over plain http, so offline mode, downloads, GPS and maps are blocked by the browser. Open the https link instead (or ask your team for the phone setup steps).</span></div>
+        )}
         {active === 'prepare' ? (
           <Prepare downloads={downloads} online={online} system={system} modelName={modelName} onGoSurvive={() => navigate('ask')} />
         ) : (

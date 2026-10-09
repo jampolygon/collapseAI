@@ -208,6 +208,7 @@ async function pump() {
 
 function friendlyError(e: any): string {
   const m = String(e?.message || e);
+  if (typeof window !== 'undefined' && !window.isSecureContext) return 'This page is open over plain http, so the browser blocks saving files. Open the https link and try again.';
   if (/QuotaExceeded|quota/i.test(m)) return 'Storage is full. Free up space and tap Resume.';
   if (!navigator.onLine) return 'No connection. It will resume automatically when you are back online.';
   if (/404/.test(m)) return 'File not found on the server.';
