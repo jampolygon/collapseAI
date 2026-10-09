@@ -254,7 +254,7 @@ export default function Ask({ downloads, onModelChange, onGoPrepare }: Props) {
                 onModelChange();
               }}
             />
-            Use GPU <span className="gpu-help">— turn off if answers are slower</span>
+            Use GPU <span className="gpu-help">(off = CPU. Faster on laptops with a good GPU; turn off if answers are slow or garbled)</span>
           </label>
         )}
         {notice && <p className="muted small" role="status"><Icon name="info" size={16} />{notice}</p>}

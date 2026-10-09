@@ -14,11 +14,11 @@ function env(userAgent: string) {
 afterEach(() => vi.unstubAllGlobals());
 
 describe('GPU default', () => {
-  it('is off on phones and on for computers until the user chooses', () => {
+  it('is off (CPU) on every device until the user chooses', () => {
     env(phone);
     expect(gpuEnabled()).toBe(false);
     env(desktop);
-    expect(gpuEnabled()).toBe(true);
+    expect(gpuEnabled()).toBe(false);
   });
   it('respects a saved choice, including turning the GPU on for a phone', () => {
     env(phone);

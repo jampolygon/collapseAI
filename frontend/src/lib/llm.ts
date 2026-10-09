@@ -23,11 +23,12 @@ let current: ModelEntry | null = null;
 export const loadedModel = () => current;
 
 /**
- * GPU (WebGPU) on/off. Some phone GPUs give broken output (garbage / Chinese text) and weak GPUs
- * can be slower than the CPU, so phones default to the CPU. A saved choice always wins.
+ * GPU (WebGPU) on/off. The model always lives in RAM; this only decides whether the CPU or the GPU
+ * does the math. CPU is the default everywhere: some phone GPUs give broken output (garbage / Chinese
+ * text) and weak GPUs can be slower. The GPU is opt-in (faster on laptops with a decent GPU), still
+ * guarded by the self-test. A saved choice always wins.
  */
 const LS_GPU = 'cai.gpu';
-const isPhone = () => typeof navigator !== 'undefined' && /Android|iPhone|iPad|Mobile/i.test(navigator.userAgent);
 export function gpuEnabled(): boolean {
   try {
     const saved = localStorage.getItem(LS_GPU);
@@ -36,7 +37,7 @@ export function gpuEnabled(): boolean {
   } catch {
     /* fall through to the default */
   }
-  return !isPhone();
+  return false;
 }
 export function setGpuEnabled(on: boolean) {
   try {
