@@ -124,6 +124,9 @@ export function searchTerms(q: string): string[] {
     .filter((w) => w && !STOP.has(w));
 }
 
+/** Packs that are general reference material: they rank below the hand-written guides. */
+const REFERENCE_PACKS = new Set(['wikipedia']);
+
 let index: MiniSearch<Passage> | null = null;
 let passages = new Map<string, Passage>();
 let loaded: Pack[] = [];
@@ -192,6 +195,8 @@ export function indexPacks(packs: Pack[]): { passages: number; articles: number 
       // Only longer words get prefix/typo matching, so "po" never matches "power" and "flood" never matches "food".
       prefix: (term: string) => term.length >= 5,
       fuzzy: (term: string) => (term.length >= 6 ? 0.2 : false),
+      // Long general reference text (Wikipedia) must not outrank the short, team-reviewed survival guides.
+      boostDocument: (id: string) => (REFERENCE_PACKS.has(id.split('/')[0]) ? 0.4 : 1),
     },
   });
   passages = new Map();

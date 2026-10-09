@@ -101,6 +101,7 @@ export const PACKS: PackEntry[] = [
   { id: 'medicine', name: 'Health & Illness', icon: '💊', url: 'packs/medicine.json', sizeMB: packSizeMB('medicine', 25), blurb: 'Fever, diarrhea, dengue, leptospirosis, infections, hygiene.' },
   { id: 'food', name: 'Food & Farming', icon: '🌾', url: 'packs/food.json', sizeMB: packSizeMB('food', 15), blurb: 'Food storage, preserving, gardening, fishing, edible plants.' },
   { id: 'engineering', name: 'Engineering & Power', icon: '🔧', url: 'packs/engineering.json', sizeMB: packSizeMB('engineering', 40), blurb: 'Solar & batteries, water filters, simple tools, radio, repairs.' },
+  { id: 'wikipedia', name: 'Wikipedia Essentials', icon: '📖', url: 'packs/wikipedia.json', sizeMB: packSizeMB('wikipedia', 0.25), blurb: 'Longer reference articles from Wikipedia (CC BY-SA): first aid, health, water, disasters, food.' },
 ];
 
 export interface Kit {

@@ -11,6 +11,9 @@ from benchmark import EvalError, read_json
 
 RETRIEVER = "python-bm25-approx-v1"
 FIELDS = {"title": 3.0, "category": 1.5, "text": 1.0}
+# Mirrors frontend/src/lib/knowledge.ts: general reference packs rank below the team-written guides.
+REFERENCE_PACKS = {"wikipedia"}
+REFERENCE_WEIGHT = 0.4
 
 
 def tokens(text: str) -> list[str]:
@@ -138,5 +141,6 @@ class Retriever:
                             length = sum(doc[field].values())
                             norm = 1.2 * (0.25 + 0.75 * length / (self.average[field] or 1))
                             scores[index] += boost * discount * idf * tf * 2.2 / (tf + norm)
+        scores = [score * (REFERENCE_WEIGHT if self.passages[i]["packId"] in REFERENCE_PACKS else 1.0) for i, score in enumerate(scores)]
         indices = sorted(range(len(scores)), key=lambda i: (-scores[i], i))
         return [{**self.passages[i], "score": round(scores[i], 6)} for i in indices[:top_k] if scores[i] > 0]

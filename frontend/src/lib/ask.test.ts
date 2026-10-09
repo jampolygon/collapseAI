@@ -5,7 +5,7 @@ import { indexPacks, search, type Pack } from './knowledge';
 
 // The real, built packs: these tests guard the "hello gives random survival tips" bug.
 beforeAll(() => {
-  const ids = ['first-aid', 'survival', 'disasters', 'medicine', 'food', 'engineering'];
+  const ids = ['first-aid', 'survival', 'disasters', 'medicine', 'food', 'engineering', 'wikipedia'];
   indexPacks(ids.map((id) => JSON.parse(readFileSync(`public/packs/${id}.json`, 'utf8')) as Pack));
 });
 
@@ -27,6 +27,11 @@ describe('search relevance (real packs)', () => {
     expect(search('may lagnat ang anak ko')[0].articleId).toBe('fever');
     expect(search('snake bite')[0].articleId).toBe('snake-bite');
     expect(search('CPR')[0].articleId).toContain('cpr');
+  });
+  it('uses Wikipedia for topics the team guides lack, but ranks the team guides first', () => {
+    expect(search('cholera')[0].packId).toBe('wikipedia');
+    expect(search('what is a tsunami')[0].packId).toBe('wikipedia');
+    expect(search('fever')[0].packId).toBe('medicine');
   });
   it('does not confuse flood with food', () => {
     expect(search('ano gagawin pag may baha')[0].articleId).toBe('flood-safety');

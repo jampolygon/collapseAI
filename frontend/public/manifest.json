@@ -49,6 +49,14 @@
       "sha256": "8efe13bee81457d9a434bab15768dde31e5b724df4aaf17f15aa8efe47f5e646",
       "articles": 6,
       "version": 1
+    },
+    {
+      "id": "wikipedia",
+      "path": "/packs/wikipedia.json",
+      "size": 250542,
+      "sha256": "4f528c3b52489042b0f988b829a067360c3a6a69473f7bbf9146284bec03620c",
+      "articles": 39,
+      "version": 1
     }
   ],
   "models": [
