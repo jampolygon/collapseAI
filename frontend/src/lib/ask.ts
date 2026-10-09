@@ -53,6 +53,7 @@ export async function ask(
     onPrompt?: (p: number) => void;
     signal?: AbortSignal;
     history?: HistoryTurn[];
+    maxTokens?: number;
   },
 ): Promise<AskResult> {
   const talk = smallTalkReply(question);
@@ -81,6 +82,6 @@ export async function ask(
     ]),
     { role: 'user', content: `Reference information:\n${ref}\n\nQuestion: ${question}` },
   ];
-  const stats = await chat(messages, { onToken: cb.onToken, onPrompt: cb.onPrompt, signal: cb.signal });
+  const stats = await chat(messages, { onToken: cb.onToken, onPrompt: cb.onPrompt, signal: cb.signal, maxTokens: cb.maxTokens });
   return { sources, stats, kind: 'answer' };
 }

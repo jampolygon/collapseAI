@@ -25,13 +25,15 @@ const noThink = { enable_thinking: false };
 
 export const MODELS: ModelEntry[] = [
   {
-    id: 'lfm25-350m',
+    // Benchmark (Tools → AI benchmark): best of the ~300M models tested, 74% of key facts
+    // vs 28% for the old Ember (LFM2.5 350M Q4).
+    id: 'smollm2-360m',
     name: 'Ember',
-    family: 'LiquidAI LFM2.5 350M · Q4_K_M',
-    url: `${HF}/LiquidAI/LFM2.5-350M-GGUF/resolve/main/LFM2.5-350M-Q4_K_M.gguf`,
-    sizeMB: 229,
+    family: 'HuggingFace SmolLM2 360M Instruct · Q8_0',
+    url: `${HF}/HuggingFaceTB/SmolLM2-360M-Instruct-GGUF/resolve/main/smollm2-360m-instruct-q8_0.gguf`,
+    sizeMB: 386,
     speed: 'fastest',
-    blurb: 'Tiny and very fast, but answers are basic. Only for very old phones; the Library is often more useful.',
+    blurb: 'Tiny and light. Good at reading the right article back to you, but can mix up numbers, so check the source shown.',
   },
   {
     id: 'qwen35-0.8b',
@@ -74,6 +76,51 @@ export const MODELS: ModelEntry[] = [
     blurb: 'Biggest model that runs in a browser. Laptops with a good GPU.',
   },
 ];
+
+/** Extra small models used only by the AI benchmark (Tools), to compare ~300M options on a device. */
+export const BENCH_MODELS: ModelEntry[] = [
+  {
+    id: 'lfm25-350m',
+    name: 'LFM 350M Q4',
+    family: 'LiquidAI LFM2.5 350M · Q4_K_M',
+    url: `${HF}/LiquidAI/LFM2.5-350M-GGUF/resolve/main/LFM2.5-350M-Q4_K_M.gguf`,
+    sizeMB: 229,
+    speed: 'fastest',
+    blurb: 'Former Ember. Scored 28%: too compressed for a model this small.',
+  },
+  {
+    id: 'lfm25-350m-q8',
+    name: 'LFM 350M Q8',
+    family: 'LiquidAI LFM2.5 350M · Q8_0',
+    url: `${HF}/LiquidAI/LFM2.5-350M-GGUF/resolve/main/LFM2.5-350M-Q8_0.gguf`,
+    sizeMB: 379,
+    speed: 'fastest',
+    blurb: 'Less compressed LFM 350M. Scored 53%.',
+  },
+  {
+    id: 'gemma3-270m',
+    name: 'Gemma 270M',
+    family: 'Google Gemma 3 270M IT · Q8_0',
+    url: `${HF}/unsloth/gemma-3-270m-it-GGUF/resolve/main/gemma-3-270m-it-Q8_0.gguf`,
+    sizeMB: 292,
+    speed: 'fastest',
+    blurb: "Google's smallest instruction model. Scored 67%.",
+  },
+];
+
+/** Photo AI: tiny vision-language model + its image encoder (the "vision add-on", mmproj). */
+export const VISION_MODEL: ModelEntry & { vision: { url: string; sizeMB: number } } = {
+  id: 'smolvlm-256m',
+  name: 'Eye',
+  family: 'HuggingFace SmolVLM 256M Instruct · Q8_0',
+  url: `${HF}/ggml-org/SmolVLM-256M-Instruct-GGUF/resolve/main/SmolVLM-256M-Instruct-Q8_0.gguf`,
+  sizeMB: 175,
+  speed: 'fastest',
+  blurb: 'Looks at photos: plants, injuries, labels, objects.',
+  vision: { url: `${HF}/ggml-org/SmolVLM-256M-Instruct-GGUF/resolve/main/mmproj-SmolVLM-256M-Instruct-Q8_0.gguf`, sizeMB: 104 },
+};
+
+export const ALL_MODELS: ModelEntry[] = [...MODELS, ...BENCH_MODELS];
 
 // ---- Knowledge: small topic packs, so people only download what they need ----
 
@@ -119,4 +166,5 @@ export const KITS: Kit[] = [
 ];
 
 export const modelKey = (id: string) => `model:${id}`;
+export const visionKey = (id: string) => `vision:${id}`;
 export const packKey = (id: string) => `pack:${id}`;

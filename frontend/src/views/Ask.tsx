@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { MODELS, modelKey } from '../lib/catalog';
+import { ALL_MODELS, modelKey } from '../lib/catalog';
 import { getFile, type DLItem } from '../lib/downloads';
 import { gpuEnabled, loadModel, loadedModel, setGpuEnabled, unload, type ChatStats } from '../lib/llm';
 import { ask, type HistoryTurn } from '../lib/ask';
@@ -39,7 +39,7 @@ interface Props {
 }
 
 export default function Ask({ downloads, onModelChange, onGoPrepare }: Props) {
-  const available = MODELS.filter((m) => downloads.some((d) => d.key === modelKey(m.id) && d.status === 'done'));
+  const available = ALL_MODELS.filter((m) => downloads.some((d) => d.key === modelKey(m.id) && d.status === 'done'));
   // default: the loaded AI, else the one picked in Prepare, else the first downloaded one
   const prepPick = (() => {
     try {
@@ -88,7 +88,7 @@ export default function Ask({ downloads, onModelChange, onGoPrepare }: Props) {
   }, [input]);
 
   const doLoad = async () => {
-    const m = MODELS.find((x) => x.id === selected);
+    const m = ALL_MODELS.find((x) => x.id === selected);
     if (!m) return;
     setLoading(true);
     setLoadErr(null);

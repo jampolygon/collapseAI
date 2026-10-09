@@ -38,8 +38,8 @@ describe('recommendModel', () => {
   });
 
   it('gives a weak phone the lightest model', () => {
-    expect(recommendModel(device({ mobile: true, ramGB: 2, cores: 4 })).model.id).toBe('lfm25-350m');
-    expect(recommendModel(device({ mobile: true, ramGB: 1, cores: 2 })).model.id).toBe('lfm25-350m');
+    expect(recommendModel(device({ mobile: true, ramGB: 2, cores: 4 })).model.id).toBe('smollm2-360m');
+    expect(recommendModel(device({ mobile: true, ramGB: 1, cores: 2 })).model.id).toBe('smollm2-360m');
   });
 
   it('never hands a phone a 2B+ model, because phones are CPU-bound', () => {

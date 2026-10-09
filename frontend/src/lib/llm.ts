@@ -52,10 +52,11 @@ export function looksSane(text: string): boolean {
   return t.length > 0 && /^[ -~\s]+$/.test(t) && /ok/i.test(t);
 }
 
-async function create(model: ModelEntry, file: Blob, gpu: boolean) {
+async function create(model: ModelEntry, file: Blob, gpu: boolean, extra: Blob[] = []) {
   const w = new Wllama({ default: wasmUrl }, { logger: LoggerWithoutDebug, suppressNativeLog: true });
   try {
-    await w.loadModel([file], {
+    // extra = e.g. the vision add-on (mmproj) for photo models; wllama detects it by its metadata
+    await w.loadModel([file, ...extra], {
       n_ctx: 4096,
       n_batch: 512,
       ...(gpu ? {} : { n_gpu_layers: 0 }),
@@ -86,15 +87,15 @@ async function selfTest(): Promise<boolean> {
  * Load a model. With the GPU on, a short self-test checks the output is sane English; if not,
  * it reloads on the CPU and remembers that choice. Returns whether it fell back.
  */
-export async function loadModel(model: ModelEntry, file: Blob): Promise<{ fellBackToCpu: boolean }> {
+export async function loadModel(model: ModelEntry, file: Blob, extra: Blob[] = []): Promise<{ fellBackToCpu: boolean }> {
   await unload();
   const useGpu = gpuEnabled();
-  wllama = await create(model, file, useGpu);
+  wllama = await create(model, file, useGpu, extra);
   current = model;
   if (!useGpu || (await selfTest())) return { fellBackToCpu: false };
   await unload();
   setGpuEnabled(false);
-  wllama = await create(model, file, false);
+  wllama = await create(model, file, false, extra);
   current = model;
   return { fellBackToCpu: true };
 }
@@ -137,4 +138,20 @@ export async function chat(
     }
   }
   return stats;
+}
+
+/** Ask a vision model about an image (JPEG/PNG bytes). Needs a model loaded with its vision add-on. */
+export async function describeImage(image: ArrayBuffer, question: string, onToken: (t: string) => void, signal?: AbortSignal) {
+  if (!wllama || !current) throw new Error('No model loaded');
+  const stream = await wllama.createChatCompletion({
+    messages: [{ role: 'user', content: [{ type: 'image', data: image }, { type: 'text', text: question }] }],
+    stream: true,
+    max_tokens: 250,
+    temperature: 0.2,
+    abortSignal: signal,
+  });
+  for await (const chunk of stream) {
+    const t = chunk.choices?.[0]?.delta?.content;
+    if (t) onToken(t);
+  }
 }

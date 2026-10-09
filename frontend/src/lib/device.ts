@@ -47,7 +47,7 @@ export function recommendModel(d: DeviceInfo): { model: ModelEntry; reason: stri
   if (d.mobile) {
     if (d.ramGB >= 6 && d.cores >= 8) return { model: pick('lfm25-1.2b'), reason: `Phone with ${d.ramGB}+ GB memory and ${d.cores} cores.` };
     if (d.ramGB >= 3) return { model: pick('qwen35-0.8b'), reason: `Phone with about ${d.ramGB} GB memory.` };
-    return { model: pick('lfm25-350m'), reason: 'Phone with little memory, so we picked the lightest model.' };
+    return { model: pick('smollm2-360m'), reason: 'Phone with little memory, so we picked the lightest model.' };
   }
   if (d.webgpu && d.ramGB >= 8) return { model: pick('qwen35-2b'), reason: 'Computer with a GPU and 8+ GB memory.' };
   if (d.ramGB >= 4) return { model: pick('lfm25-1.2b'), reason: `Computer with about ${d.ramGB} GB memory, no fast GPU.` };
