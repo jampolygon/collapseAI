@@ -107,6 +107,18 @@ export async function unload() {
   if (w) await w.exit().catch(() => {});
 }
 
+/**
+ * Tiny models sometimes loop ("Cut the bottle in half again." x30). Returns true when the newest
+ * finished line (long enough to matter) already appeared earlier in the answer.
+ */
+export function repeatsLine(text: string): boolean {
+  const lines = text.split('\n').map((l) => l.replace(/^\s*(\d+[.)]|[-*•])\s*/, '').trim().toLowerCase());
+  lines.pop(); // the last line is still being written
+  const last = lines.at(-1);
+  if (!last || last.length < 12) return false;
+  return lines.slice(0, -1).includes(last);
+}
+
 /** Stream a chat answer. onToken gets each new piece of text; onPrompt gets prompt-reading progress (0..1). */
 export async function chat(
   messages: ChatMessage[],
@@ -114,28 +126,51 @@ export async function chat(
 ): Promise<ChatStats | null> {
   if (!wllama || !current) throw new Error('No model loaded');
   let stats: ChatStats | null = null;
-  const stream = await wllama.createChatCompletion({
-    messages,
-    stream: true,
-    max_tokens: opts.maxTokens ?? 400,
-    temperature: opts.temperature ?? 0.3,
-    abortSignal: opts.signal,
-    return_progress: true,
-    chat_template_kwargs: current.chatKwargs,
-  });
-  for await (const chunk of stream) {
-    const p = chunk.prompt_progress;
-    if (p && p.total > 0) opts.onPrompt?.(p.processed / p.total);
-    const t = chunk.choices?.[0]?.delta?.content;
-    if (t) opts.onToken(t);
-    if (chunk.timings) {
-      stats = {
-        promptTokens: chunk.timings.prompt_n,
-        promptPerSec: chunk.timings.prompt_per_second,
-        genTokens: chunk.timings.predicted_n,
-        genPerSec: chunk.timings.predicted_per_second,
-      };
+  // our own controller, so the loop guard can stop generation without it looking like a user "Stop"
+  const ctrl = new AbortController();
+  const forward = () => ctrl.abort();
+  opts.signal?.addEventListener('abort', forward);
+  let text = '';
+  let looped = false;
+  try {
+    const stream = await wllama.createChatCompletion({
+      messages,
+      stream: true,
+      max_tokens: opts.maxTokens ?? 400,
+      temperature: opts.temperature ?? 0.3,
+      // mild penalties: small models otherwise repeat the same step over and over
+      penalty_repeat: 1.12,
+      penalty_last_n: 256,
+      abortSignal: ctrl.signal,
+      return_progress: true,
+      chat_template_kwargs: current.chatKwargs,
+    });
+    for await (const chunk of stream) {
+      const p = chunk.prompt_progress;
+      if (p && p.total > 0) opts.onPrompt?.(p.processed / p.total);
+      const t = chunk.choices?.[0]?.delta?.content;
+      if (t) {
+        opts.onToken(t);
+        text += t;
+        if (t.includes('\n') && repeatsLine(text)) {
+          looped = true;
+          ctrl.abort();
+          break;
+        }
+      }
+      if (chunk.timings) {
+        stats = {
+          promptTokens: chunk.timings.prompt_n,
+          promptPerSec: chunk.timings.prompt_per_second,
+          genTokens: chunk.timings.predicted_n,
+          genPerSec: chunk.timings.predicted_per_second,
+        };
+      }
     }
+  } catch (e) {
+    if (!looped || opts.signal?.aborted) throw e; // a real error or the user's Stop
+  } finally {
+    opts.signal?.removeEventListener('abort', forward);
   }
   return stats;
 }

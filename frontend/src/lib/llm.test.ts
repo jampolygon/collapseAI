@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { gpuEnabled, looksSane, setGpuEnabled } from './llm';
+import { gpuEnabled, looksSane, setGpuEnabled, repeatsLine } from './llm';
 
 const store = new Map<string, string>();
 const phone = 'Mozilla/5.0 (Linux; Android 15; Infinix X6870) AppleWebKit/537.36 Chrome/130 Mobile Safari/537.36';
@@ -39,5 +39,16 @@ describe('looksSane (GPU self-test)', () => {
     expect(looksSane('好的，我明白了')).toBe(false);
     expect(looksSane('OK 好的')).toBe(false);
     expect(looksSane('@@@@####')).toBe(false);
+  });
+});
+
+describe('loop guard', () => {
+  it('catches a step that repeats, ignoring numbering', () => {
+    expect(repeatsLine('Collect bottles.\n1. Cut the bottle in half again.\n2. Cut the bottle in half again.\n')).toBe(true);
+  });
+  it('does not stop normal answers or short repeated lines', () => {
+    expect(repeatsLine('1. Cut the top off a bottle.\n2. Poke holes in the cap.\n3. Fill with water.\n')).toBe(false);
+    expect(repeatsLine('Yes.\nYes.\n')).toBe(false);
+    expect(repeatsLine('Cut the bottle in half again.\nCut the bottle in')).toBe(false); // last line unfinished
   });
 });
