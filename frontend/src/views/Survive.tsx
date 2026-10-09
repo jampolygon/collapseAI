@@ -4,6 +4,7 @@ import Ask from './Ask';
 import Library from './Library';
 import Tools from './Tools';
 import { Skeleton } from '../components/Skeleton';
+import { ErrorBoundary } from '../components/ErrorBoundary';
 import { lazy, Suspense } from 'react';
 import type { Theme } from '../ui/theme';
 
@@ -37,7 +38,7 @@ export default function Survive({ downloads, packs, tab, online, theme, knowledg
       {tab === 'ask' && <Ask downloads={downloads} onModelChange={onModelChange} onGoPrepare={onGoPrepare} />}
       {tab === 'library' && (knowledgeLoading ? <div className="page-content"><Skeleton label="Loading your knowledge library" lines={6} className="library-skeleton" /></div> : <Library packs={packs} />)}
       {tab === 'tools' && <Tools />}
-      {tab === 'map' && <Suspense fallback={<div className="page-content"><Skeleton label="Loading offline maps" lines={5} /></div>}><OfflineMapPage online={online} theme={theme} /></Suspense>}
+      {tab === 'map' && <ErrorBoundary message="The map could not load. It may not be saved for offline use yet: open Map once while you are online, then it works offline."><Suspense fallback={<div className="page-content"><Skeleton label="Loading offline maps" lines={5} /></div>}><OfflineMapPage online={online} theme={theme} /></Suspense></ErrorBoundary>}
     </div>
   );
 }
