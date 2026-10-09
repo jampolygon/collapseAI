@@ -1,0 +1,43 @@
+{
+ "id": "food",
+ "name": "Food & Farming",
+ "version": 1,
+ "license": "CC BY-SA 4.0, CollapseAI team. Based on USDA / FAO food safety guidance.",
+ "articles": [
+  {
+   "id": "food-safety-when-the-power-is-out",
+   "title": "Food safety when the power is out",
+   "category": "Food",
+   "source": "Based on USDA food safety guidance",
+   "text": "- Keep the refrigerator and freezer doors closed as much as possible.\n- A closed refrigerator keeps food safe for about 4 hours.\n- A full freezer keeps food frozen for about 48 hours (24 hours if half full).\n- Eat perishable food first (meat, fish, milk, leftovers), then fridge food, then frozen food, then canned and dry goods.\n- Throw away meat, fish, eggs, milk and leftovers that have been above 4 °C for more than 2 hours.\n- When in doubt, throw it out. Never taste food to check if it is safe."
+  },
+  {
+   "id": "food-after-a-flood",
+   "title": "Food after a flood",
+   "category": "Food",
+   "source": "Based on USDA / WHO flood food safety guidance",
+   "text": "Throw away any food that touched flood water, including food in plastic, cardboard, screw-top jars and sacks of rice, because flood water carries sewage and chemicals.\n\nCommercially sealed metal cans that are not damaged can be saved: remove labels, wash with soap and water, soak for 15 minutes in a solution of about 3 tablespoons of unscented bleach per 4 liters of water (or boil the cans for 2 minutes), then relabel with a marker.\n\nWash and disinfect dishes and cooking utensils before use."
+  },
+  {
+   "id": "cooking-with-little-fuel",
+   "title": "Cooking with little fuel",
+   "category": "Food",
+   "source": "CollapseAI Essentials",
+   "text": "- Soak rice and beans before cooking to cut cooking time.\n- Use a lid. It saves a lot of fuel.\n- Cut food into small pieces.\n- Retained-heat (\"hay box\") cooking: bring food to a boil for a few minutes, then wrap the covered pot tightly in blankets, towels or put it in a box filled with dry grass or crumpled paper. It keeps cooking for hours without fuel.\n- Cook outdoors or in a well-ventilated area. Charcoal stoves indoors can kill with carbon monoxide."
+  },
+  {
+   "id": "fast-growing-food-crops-philippines",
+   "title": "Fast-growing food crops (Philippines)",
+   "category": "Farming",
+   "source": "CollapseAI Essentials (based on common Philippine home gardening practice)",
+   "text": "Fast crops for an emergency garden:\n- Kangkong (water spinach): grows from cuttings in wet soil or water; harvest in about 3–4 weeks.\n- Camote (sweet potato): plant vine cuttings; tops can be eaten in weeks, roots in about 3–4 months.\n- Pechay: harvest in about 4–6 weeks.\n- Malunggay (moringa): plant thick stem cuttings; leaves are very nutritious and grow back after picking.\n- Mung beans (monggo): sprouts in a few days without soil; plants give beans in about 2 months.\n- Okra, tomatoes, eggplant: about 2–3 months.\n\nTips: use containers or sacks if land is flooded or limited; compost kitchen scraps; water early in the morning; save seeds from the best plants."
+  },
+  {
+   "id": "preserving-food-without-a-fridge",
+   "title": "Preserving food without a fridge",
+   "category": "Food",
+   "source": "Based on FAO food preservation guidance",
+   "text": "- Drying: slice fish, meat, fruit or vegetables thinly and dry in the sun on a raised rack, covered with mesh against flies. Dry until brittle or leathery.\n- Salting: pack fish or meat in plenty of salt (as in daing or tuyo), then dry.\n- Smoking: hang thin strips above a low, smoky fire for many hours.\n- Pickling: vinegar with salt (achara, paksiw) slows spoilage.\n- Store dried food in sealed, dry containers away from rats and insects."
+  }
+ ]
+}

@@ -1,0 +1,78 @@
+{
+ "id": "first-aid",
+ "name": "First Aid",
+ "version": 1,
+ "license": "CC BY-SA 4.0, CollapseAI team. Based on standard first-aid guidance (Red Cross, WHO).",
+ "articles": [
+  {
+   "id": "severe-bleeding",
+   "title": "Severe bleeding",
+   "category": "First aid",
+   "source": "CollapseAI Essentials (based on Red Cross / Stop the Bleed guidance)",
+   "text": "Severe bleeding can kill in minutes. Act immediately.\n\n1. Protect yourself if possible (gloves or plastic bag over your hand).\n2. Press hard directly on the wound with a clean cloth, gauze or your hand. Keep firm, steady pressure for at least 10 minutes without lifting to check.\n3. If blood soaks through, do NOT remove the cloth. Put more cloth on top and press harder.\n4. For a deep wound, pack the wound with cloth and press on it.\n5. Raise the injured arm or leg above the heart if it is not broken.\n\nTourniquet (only for life-threatening bleeding from an arm or leg that pressure does not stop): tie a wide band (belt, cloth strip 4–5 cm wide) 5–7 cm above the wound, not on a joint. Twist with a stick until the bleeding stops. Write down the time it was applied. Do not loosen it. Get the person to a hospital as fast as possible.\n\nWatch for shock: pale cold skin, fast weak pulse, confusion. Lay the person down and keep them warm."
+  },
+  {
+   "id": "burns",
+   "title": "Burns",
+   "category": "First aid",
+   "source": "CollapseAI Essentials (based on WHO / Red Cross burn first aid)",
+   "text": "1. Stop the burning: move away from the heat, put out flames (stop, drop and roll).\n2. Cool the burn under cool, clean running water for 20 minutes. Do not use ice, ice water, toothpaste, butter, oil or soy sauce. These make burns worse.\n3. Remove rings, watches and tight clothing near the burn before it swells. Do not pull off clothing that is stuck to the skin.\n4. Cover loosely with clean plastic wrap or a clean, non-fluffy cloth.\n5. Do not pop blisters.\n6. Give water to drink if the person is awake.\n\nGet medical help for: burns larger than the person's palm, burns on the face, hands, feet, genitals or joints, deep burns (white, brown or black skin, no pain), electrical or chemical burns, and burns in babies, children or the elderly.\n\nChemical burns: brush off dry chemicals, then rinse with lots of water for at least 20 minutes."
+  },
+  {
+   "id": "cpr-cardiopulmonary-resuscitation",
+   "title": "CPR (cardiopulmonary resuscitation)",
+   "category": "First aid",
+   "source": "CollapseAI Essentials (based on AHA / Red Cross CPR guidelines)",
+   "text": "Use CPR when a person is unresponsive and not breathing normally (no breathing or only gasping).\n\n1. Check the scene is safe. Tap the person and shout. If no response, call for help (911 in the Philippines) and ask someone to find an AED if available.\n2. Lay the person on their back on a firm surface.\n3. Put the heel of one hand on the center of the chest (lower half of the breastbone), other hand on top.\n4. Push hard and fast: about 5–6 cm deep for adults, 100 to 120 pushes per minute. Let the chest come fully back up after each push.\n5. If trained: after 30 compressions, give 2 rescue breaths (tilt head back, lift chin, pinch nose, breathe until the chest rises). If not trained, do hands-only CPR: keep pushing without breaths.\n6. Continue until the person breathes normally, help arrives, or you are too exhausted to continue. Swap with another person every 2 minutes if possible.\n\nChildren: use one or two hands, push about 5 cm deep. Infants: use two fingers, about 4 cm deep."
+  },
+  {
+   "id": "choking",
+   "title": "Choking",
+   "category": "First aid",
+   "source": "CollapseAI Essentials (based on Red Cross choking guidance)",
+   "text": "Signs: cannot speak, cough or breathe; hands at the throat; face turning blue.\n\nIf the person can cough strongly, encourage them to keep coughing.\n\nAdult or child over 1 year:\n1. Give 5 firm back blows between the shoulder blades with the heel of your hand, with the person leaning forward.\n2. Give 5 abdominal thrusts (Heimlich): stand behind, make a fist just above the navel, grab it with your other hand, pull sharply inward and upward.\n3. Repeat 5 back blows and 5 thrusts until the object comes out.\n\nInfant under 1 year: lay the baby face down along your forearm, head lower than the body. Give 5 back blows, then turn over and give 5 chest thrusts with two fingers in the center of the chest. Never do abdominal thrusts on infants.\n\nIf the person becomes unconscious, lower them to the ground and start CPR. Check the mouth for the object before giving breaths."
+  },
+  {
+   "id": "broken-bones-fractures",
+   "title": "Broken bones (fractures)",
+   "category": "First aid",
+   "source": "CollapseAI Essentials (based on Red Cross fracture guidance)",
+   "text": "Signs: pain, swelling, bruising, deformity, unable to move or put weight on the limb.\n\n1. Do not try to straighten the bone.\n2. Stop any bleeding first. If bone is sticking out (open fracture), cover the wound with a clean cloth; do not push the bone back in.\n3. Splint it as it lies: use a stick, board, rolled newspaper or cardboard. The splint must reach past the joint above and below the break. Pad with cloth.\n4. Tie the splint with strips of cloth above and below the break, not on top of it. Not too tight.\n5. Check fingers or toes every 15 minutes: if they turn pale, blue, cold or numb, loosen the ties.\n6. Use a sling for arm injuries.\n7. Apply a cold pack wrapped in cloth for 20 minutes to reduce swelling.\n\nSuspect a neck or back injury after a fall from height, vehicle crash or diving accident: do not move the person unless they are in immediate danger. Keep the head and neck still."
+  },
+  {
+   "id": "shock",
+   "title": "Shock",
+   "category": "First aid",
+   "source": "CollapseAI Essentials (based on Red Cross shock guidance)",
+   "text": "Shock is when not enough blood reaches the organs. It can follow severe bleeding, burns, dehydration, serious infection or allergic reaction. It is life-threatening.\n\nSigns: pale, cold, clammy skin; fast, weak pulse; fast shallow breathing; dizziness, confusion, weakness; thirst.\n\n1. Treat the cause (stop bleeding, cool burns).\n2. Lay the person on their back. Raise the legs about 30 cm if there is no leg, hip, neck or back injury.\n3. Keep them warm with a blanket or clothes, but do not overheat.\n4. Loosen tight clothing.\n5. Do not give food or drink.\n6. Watch breathing. If they stop breathing normally, start CPR.\n7. Get medical help urgently."
+  },
+  {
+   "id": "heat-stroke-and-heat-exhaustion",
+   "title": "Heat stroke and heat exhaustion",
+   "category": "First aid",
+   "source": "CollapseAI Essentials (based on WHO / CDC heat illness guidance)",
+   "text": "Heat exhaustion: heavy sweating, weakness, dizziness, headache, nausea, muscle cramps. Move to shade, loosen clothes, drink water or oral rehydration solution, cool with wet cloths and fanning.\n\nHeat stroke is an emergency: very high body temperature, hot skin (may be dry or sweaty), confusion, slurred speech, fainting, seizures.\n\n1. Move the person to the coolest place possible.\n2. Cool them fast: pour or spray water all over the body and fan them; put cold wet cloths or ice packs on the neck, armpits and groin.\n3. Do not give fluids if they are confused or unconscious.\n4. Keep cooling until help arrives or they recover.\n\nPrevention: drink water often, rest in shade during midday heat, wear light loose clothes."
+  },
+  {
+   "id": "dehydration-and-oral-rehydration-solution-ors",
+   "title": "Dehydration and oral rehydration solution (ORS)",
+   "category": "First aid",
+   "source": "WHO oral rehydration guidance",
+   "text": "Signs of dehydration: thirst, dry mouth, little or dark urine, dizziness, sunken eyes, in babies a sunken soft spot on the head. Severe: very sleepy or unconscious, unable to drink.\n\nHomemade ORS (WHO recipe):\n- 1 liter of clean, safe drinking water\n- 6 level teaspoons of sugar\n- 1/2 level teaspoon of salt\nStir until dissolved. Too much salt is dangerous; measure carefully.\n\nGive small sips often. For diarrhea, give ORS after every loose stool. Keep breastfeeding babies and keep feeding children. Make a fresh batch every 24 hours.\n\nGet help if the person cannot drink, keeps vomiting, has blood in stool, or becomes very sleepy."
+  },
+  {
+   "id": "snake-bite",
+   "title": "Snake bite",
+   "category": "First aid",
+   "source": "CollapseAI Essentials (based on WHO snakebite first aid)",
+   "text": "1. Move away from the snake. Do not try to catch or kill it.\n2. Keep the person calm and still. Movement spreads venom faster.\n3. Remove rings, watches and tight clothing near the bite.\n4. Keep the bitten limb still with a splint, at about the level of the heart.\n5. Get to a hospital as fast as possible. Antivenom is the only real treatment. Carry the person if you can.\n\nDo NOT: cut the wound, suck out venom, apply a tight tourniquet, put ice on it, apply herbs, or drink alcohol.\n\nNote the time of the bite and what the snake looked like if it was safe to see."
+  },
+  {
+   "id": "animal-bites-and-rabies",
+   "title": "Animal bites and rabies",
+   "category": "First aid",
+   "source": "CollapseAI Essentials (based on WHO rabies guidance)",
+   "text": "Rabies is almost always fatal once symptoms start, but it is preventable with vaccine after a bite. Dogs and cats are the main source in the Philippines.\n\n1. Immediately wash the wound with soap and running water for 15 minutes. This greatly reduces the risk.\n2. Apply an antiseptic (povidone-iodine or alcohol) if available.\n3. Do not close the wound with stitches or tape.\n4. Go to an Animal Bite Treatment Center or health center as soon as possible for anti-rabies vaccine, even if the animal looks healthy.\n5. If possible, observe the animal for 14 days."
+  }
+ ]
+}
