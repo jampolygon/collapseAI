@@ -125,7 +125,7 @@ export function searchTerms(q: string): string[] {
 }
 
 /** Packs that are general reference material: they rank below the hand-written guides. */
-const REFERENCE_PACKS = new Set(['wikipedia']);
+const REFERENCE_PACKS = new Set(['wikipedia-essentials', 'wikipedia-prepared']);
 
 let index: MiniSearch<Passage> | null = null;
 let passages = new Map<string, Passage>();

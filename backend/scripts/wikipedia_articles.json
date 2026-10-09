@@ -1,44 +1,106 @@
 {
-  "_comment": "Curated Wikipedia articles for the 'wikipedia' pack. Edit this list, then run: python backend/scripts/wikipedia_to_md.py && npm run packs. Missing titles are reported and skipped.",
-  "articles": [
-    {"title": "First aid", "category": "Wikipedia · First aid", "tags": "first aid, emergency, injury", "disaster_types": "accident"},
-    {"title": "Cardiopulmonary resuscitation", "category": "Wikipedia · First aid", "tags": "cpr, resuscitation, cardiac arrest", "disaster_types": "accident"},
-    {"title": "Choking", "category": "Wikipedia · First aid", "tags": "choking, nabulunan, heimlich", "disaster_types": "accident"},
-    {"title": "Bleeding", "category": "Wikipedia · First aid", "tags": "bleeding, dugo, hemorrhage", "disaster_types": "accident"},
-    {"title": "Tourniquet", "category": "Wikipedia · First aid", "tags": "tourniquet, bleeding, limb", "disaster_types": "accident"},
-    {"title": "Burn", "category": "Wikipedia · First aid", "tags": "burn, paso, scald", "disaster_types": "accident"},
-    {"title": "Bone fracture", "category": "Wikipedia · First aid", "tags": "fracture, broken bone, bali", "disaster_types": "earthquake, accident"},
-    {"title": "Wound", "category": "Wikipedia · First aid", "tags": "wound, sugat, cut", "disaster_types": "accident"},
-    {"title": "Shock (circulatory)", "category": "Wikipedia · First aid", "tags": "shock, hinimatay", "disaster_types": "accident"},
-    {"title": "Snakebite", "category": "Wikipedia · First aid", "tags": "snake bite, ahas, kagat", "disaster_types": "accident"},
-    {"title": "Hypothermia", "category": "Wikipedia · Health", "tags": "hypothermia, cold, exposure", "disaster_types": "typhoon, flood"},
-    {"title": "Heat stroke", "category": "Wikipedia · Health", "tags": "heat stroke, heat, hot weather", "disaster_types": "heat"},
-    {"title": "Dehydration", "category": "Wikipedia · Health", "tags": "dehydration, fluids, water", "disaster_types": "flood, heat"},
-    {"title": "Oral rehydration therapy", "category": "Wikipedia · Health", "tags": "ors, rehydration, diarrhea", "disaster_types": "flood"},
-    {"title": "Diarrhea", "category": "Wikipedia · Health", "tags": "diarrhea, pagtatae", "disaster_types": "flood"},
-    {"title": "Dengue fever", "category": "Wikipedia · Health", "tags": "dengue, lamok, mosquito", "disaster_types": "flood, typhoon"},
-    {"title": "Leptospirosis", "category": "Wikipedia · Health", "tags": "leptospirosis, daga, flood water", "disaster_types": "flood, typhoon"},
-    {"title": "Cholera", "category": "Wikipedia · Health", "tags": "cholera, contaminated water", "disaster_types": "flood"},
-    {"title": "Typhoid fever", "category": "Wikipedia · Health", "tags": "typhoid, contaminated water", "disaster_types": "flood"},
-    {"title": "Hand washing", "category": "Wikipedia · Health", "tags": "hand washing, hygiene, sanitation", "disaster_types": "flood"},
-    {"title": "Carbon monoxide poisoning", "category": "Wikipedia · Health", "tags": "carbon monoxide, generator, charcoal", "disaster_types": "typhoon, earthquake"},
-    {"title": "Water purification", "category": "Wikipedia · Water", "tags": "water, purification, tubig", "disaster_types": "flood, typhoon"},
-    {"title": "Solar water disinfection", "category": "Wikipedia · Water", "tags": "solar disinfection, sodis, water", "disaster_types": "typhoon"},
-    {"title": "Water chlorination", "category": "Wikipedia · Water", "tags": "chlorine, bleach, water", "disaster_types": "flood, typhoon"},
-    {"title": "Survival skills", "category": "Wikipedia · Survival", "tags": "survival, shelter, fire, water", "disaster_types": "typhoon, earthquake"},
-    {"title": "Emergency management", "category": "Wikipedia · Disasters", "tags": "emergency, preparedness, response", "disaster_types": "typhoon, flood, earthquake"},
-    {"title": "Tropical cyclone", "category": "Wikipedia · Disasters", "tags": "typhoon, bagyo, storm, cyclone", "disaster_types": "typhoon"},
-    {"title": "Storm surge", "category": "Wikipedia · Disasters", "tags": "storm surge, coast, typhoon", "disaster_types": "typhoon"},
-    {"title": "Flood", "category": "Wikipedia · Disasters", "tags": "flood, baha", "disaster_types": "flood"},
-    {"title": "Earthquake", "category": "Wikipedia · Disasters", "tags": "earthquake, lindol, aftershock", "disaster_types": "earthquake"},
-    {"title": "Tsunami", "category": "Wikipedia · Disasters", "tags": "tsunami, coast, earthquake", "disaster_types": "earthquake, tsunami"},
-    {"title": "Landslide", "category": "Wikipedia · Disasters", "tags": "landslide, mudslide, guho", "disaster_types": "typhoon, earthquake"},
-    {"title": "Volcanic ash", "category": "Wikipedia · Disasters", "tags": "volcano, ash, abo, bulkan", "disaster_types": "volcano"},
-    {"title": "Food safety", "category": "Wikipedia · Food", "tags": "food safety, spoilage, pagkain", "disaster_types": "typhoon, flood"},
-    {"title": "Food preservation", "category": "Wikipedia · Food", "tags": "preserving, drying, salting, pagkain", "disaster_types": "typhoon"},
-    {"title": "Canning", "category": "Wikipedia · Food", "tags": "canning, preserving, jars", "disaster_types": "typhoon"},
-    {"title": "Distress signal", "category": "Wikipedia · Signaling", "tags": "sos, signal, rescue", "disaster_types": "typhoon, flood"},
-    {"title": "Morse code", "category": "Wikipedia · Signaling", "tags": "morse, sos, signal", "disaster_types": "typhoon, flood"},
-    {"title": "Signal mirror", "category": "Wikipedia · Signaling", "tags": "mirror, signal, rescue", "disaster_types": "typhoon, flood"}
+  "_comment": "Curated Wikipedia articles, grouped by kit tier (essentials < prepared < full). Edit, then run: python backend/scripts/wikipedia_to_md.py && npm run packs. Missing titles are reported and skipped. 'tags' default to the article title.",
+  "groups": [
+    {"tier": "essentials", "category": "Wikipedia · First aid", "disaster_types": "accident", "titles": [
+      "First aid", "Cardiopulmonary resuscitation", "Choking", "Heimlich maneuver", "Bleeding", "Tourniquet", "Burn", "Bone fracture",
+      "Wound", "Shock (circulatory)", "Snakebite", "Recovery position", "Automated external defibrillator", "Splint (medicine)", "Sprain",
+      "Concussion", "Drowning", "Electric shock", "Anaphylaxis", "Poisoning", "Triage", "Bandage", "Dressing (medicine)", "Dislocation (medicine)"
+    ]},
+    {"tier": "essentials", "category": "Wikipedia · Health", "disaster_types": "flood, typhoon", "titles": [
+      "Hypothermia", "Heat stroke", "Hyperthermia", "Dehydration", "Oral rehydration therapy", "Diarrhea", "Dengue fever", "Leptospirosis",
+      "Cholera", "Typhoid fever", "Hand washing", "Carbon monoxide poisoning", "Malaria", "Rabies", "Tetanus", "Fever", "Waterborne diseases", "Foodborne illness"
+    ]},
+    {"tier": "essentials", "category": "Wikipedia · Water", "disaster_types": "flood, typhoon", "titles": [
+      "Water purification", "Solar water disinfection", "Water chlorination", "Drinking water", "Water filter", "Rainwater harvesting", "Boiling"
+    ]},
+    {"tier": "essentials", "category": "Wikipedia · Survival", "disaster_types": "typhoon, earthquake", "titles": [
+      "Survival skills", "Bushcraft", "Wilderness medicine", "Survival kit", "Bug-out bag", "Firestarter", "Tinder", "Campfire", "Ferrocerium",
+      "Orienteering", "Compass", "Navigation", "Polaris", "Distress signal", "Morse code", "Signalling mirror", "Mayday", "Flare", "Whistle", "Search and rescue", "Emergency shelter"
+    ]},
+    {"tier": "essentials", "category": "Wikipedia · Disasters", "disaster_types": "typhoon, flood, earthquake", "titles": [
+      "Emergency management", "Tropical cyclone", "Typhoon", "Storm surge", "Flood", "Earthquake", "Tsunami", "Landslide", "Volcanic ash", "Lahar",
+      "Emergency evacuation", "Heat wave", "Drought", "Pacific Ring of Fire", "Disaster risk reduction"
+    ]},
+    {"tier": "essentials", "category": "Wikipedia · Food", "disaster_types": "typhoon, flood", "titles": [
+      "Food safety", "Food preservation", "Canning", "Food storage", "Pickling", "Curing (food preservation)"
+    ]},
+
+    {"tier": "prepared", "category": "Wikipedia · First aid", "disaster_types": "accident", "titles": [
+      "Spinal cord injury", "Traumatic brain injury", "Crush syndrome", "Compartment syndrome", "Gangrene", "Sepsis", "Infection", "Suture",
+      "Antiseptic", "Hydrogen peroxide", "Povidone-iodine", "Smoke inhalation", "Hemorrhagic shock", "Pneumothorax", "Cardiac arrest", "Stroke",
+      "Heart attack", "Seizure", "Fainting", "Hypoglycemia", "Frostbite", "Sunburn", "Insect bite", "Jellyfish", "Dog bite"
+    ]},
+    {"tier": "prepared", "category": "Wikipedia · Health", "disaster_types": "flood, typhoon", "titles": [
+      "Tuberculosis", "Measles", "Influenza", "Pneumonia", "Asthma", "Diabetes", "Hypertension", "Malnutrition", "Scurvy", "Vitamin deficiency",
+      "Breastfeeding", "Childbirth", "Pregnancy", "Infant", "Elderly care", "Antibiotic", "Paracetamol", "Ibuprofen", "Aspirin", "Hepatitis A",
+      "Scabies", "Head louse", "Conjunctivitis", "Skin infection", "Ringworm", "Athlete's foot", "Trench foot", "Common cold", "Vomiting", "Constipation",
+      "Psychological first aid", "Post-traumatic stress disorder", "Anxiety", "Sleep deprivation", "Toothache", "Vital signs", "Pulse"
+    ]},
+    {"tier": "prepared", "category": "Wikipedia · Water & sanitation", "disaster_types": "flood, typhoon", "titles": [
+      "Sanitation", "Pit latrine", "Composting toilet", "Septic tank", "Water well", "Hand pump", "Sand filter", "Activated carbon", "Distillation",
+      "Reverse osmosis", "Cistern", "Chlorine", "Sodium hypochlorite", "Bleach", "Calcium hypochlorite", "Iodine", "Hygiene", "Soap", "Waste management", "Greywater"
+    ]},
+    {"tier": "prepared", "category": "Wikipedia · Food & farming", "disaster_types": "typhoon, flood", "titles": [
+      "Gardening", "Vegetable", "Compost", "Crop rotation", "Seed", "Permaculture", "Aquaponics", "Aquaculture", "Fishing", "Hunting", "Foraging",
+      "Coconut", "Banana", "Cassava", "Sweet potato", "Taro", "Moringa oleifera", "Rice", "Maize", "Mung bean", "Lactic acid fermentation", "Drying (food)",
+      "Smoking (cooking)", "Salting (food)", "Fermentation in food processing", "Honey", "Beekeeping", "Livestock", "Poultry farming", "Animal husbandry",
+      "Food rationing", "Canned food", "Dried fruit", "Jerky", "Edible plant", "Poisonous plant", "Mushroom poisoning", "Fish as food"
+    ]},
+    {"tier": "prepared", "category": "Wikipedia · Shelter & survival", "disaster_types": "typhoon, earthquake", "titles": [
+      "Tent", "Tarpaulin", "Rope", "Knot", "Bowline", "Bamboo", "Thatching", "Hammock", "Sleeping bag", "Clothing", "Rain gear", "Waterproofing",
+      "Hiking", "Map", "Topographic map", "Cardinal direction", "Global Positioning System", "Dead reckoning", "Crux", "Weather forecasting", "Barometer", "Cloud",
+      "Wildfire", "Fire safety", "Fire extinguisher", "Hypothermia prevention", "Heat index", "Wet-bulb temperature"
+    ]},
+    {"tier": "prepared", "category": "Wikipedia · Disasters", "disaster_types": "typhoon, flood, earthquake", "titles": [
+      "Typhoon Haiyan", "Mayon Volcano", "Taal Volcano", "Mount Pinatubo", "Philippine Trench", "Philippine Mobile Belt", "Soil liquefaction", "Sinkhole",
+      "El Niño", "La Niña", "Monsoon", "Intertropical convergence zone", "Tornado", "Storm", "Flash flood", "Mudflow", "Aftershock", "Earthquake preparedness",
+      "Civil defense", "Community emergency response team", "Philippine Red Cross", "International Red Cross and Red Crescent Movement",
+      "Philippine Atmospheric, Geophysical and Astronomical Services Administration", "Early warning system", "Disaster"
+    ]},
+
+    {"tier": "full", "category": "Wikipedia · Power & electricity", "disaster_types": "typhoon, earthquake", "titles": [
+      "Solar panel", "Solar cell", "Lead–acid battery", "Lithium-ion battery", "Battery charger", "Charge controller", "Power inverter", "Electric generator",
+      "Engine-generator", "Hydroelectricity", "Micro hydro", "Wind turbine", "Biogas", "Charcoal", "Rocket stove", "Solar cooker", "Multimeter", "Soldering",
+      "Ohm's law", "Series and parallel circuits", "Fuse (electrical)", "Circuit breaker", "Ground (electricity)", "Electrical wiring", "Electricity",
+      "Direct current", "Alternating current", "Transformer", "Capacitor", "Resistor", "Diode", "Electric motor", "Voltage", "Electric power", "Power outage",
+      "Uninterruptible power supply", "Power bank", "USB", "Dynamo", "Hand crank", "Thermoelectric generator", "Stirling engine", "Steam engine", "Internal combustion engine"
+    ]},
+    {"tier": "full", "category": "Wikipedia · Radio & communication", "disaster_types": "typhoon, earthquake", "titles": [
+      "Amateur radio", "Two-way radio", "Citizen band radio", "Shortwave radio", "AM broadcasting", "FM broadcasting", "Crystal radio", "Antenna (radio)",
+      "Walkie-talkie", "Emergency communication", "Satellite phone", "Radio", "Radio wave", "Semaphore", "Heliograph", "Smoke signal", "Telegraphy", "Telephone",
+      "Mobile phone", "Emergency Alert System", "Cell broadcast", "Citizens band radio", "Amateur radio emergency communications", "NOAA Weather Radio"
+    ]},
+    {"tier": "full", "category": "Wikipedia · Tools & repair", "disaster_types": "typhoon, earthquake", "titles": [
+      "Hand tool", "Knife", "Axe", "Saw", "Hammer", "Screwdriver", "Wrench", "Pliers", "Drill", "File (tool)", "Chisel", "Plane (tool)", "Duct tape", "Adhesive",
+      "Nail (fastener)", "Screw", "Bolt (fastener)", "Wire", "Cable", "Pipe (fluid conveyance)", "Plumbing", "Pump", "Valve", "Lever", "Pulley", "Wheel", "Block and tackle",
+      "Concrete", "Cement", "Brick", "Lumber", "Plywood", "Timber framing", "Roof", "Corrugated galvanised iron", "Masonry", "Welding", "Blacksmith", "Metalworking",
+      "Sewing", "Needle", "Leather", "Textile", "Rope making", "Basket weaving", "Pottery", "Glass", "Soap making", "Candle", "Oil lamp", "Kerosene lamp", "Lantern", "Flashlight"
+    ]},
+    {"tier": "full", "category": "Wikipedia · Medicine in depth", "disaster_types": "flood, typhoon", "titles": [
+      "Medical emergency", "Emergency medicine", "Disaster medicine", "Field hospital", "Medical evacuation", "Pharmacology", "Penicillin", "Amoxicillin",
+      "Doxycycline", "Oral rehydration solution", "Zinc supplementation", "Vitamin A", "Iron deficiency", "Anemia", "Hemoglobin", "Blood transfusion", "Blood type",
+      "Intravenous therapy", "Saline", "Wound healing", "Debridement", "Scar", "Abscess", "Cellulitis", "Leprosy", "Hepatitis B", "HIV/AIDS", "Syphilis",
+      "Sexually transmitted infection", "Contraception", "Menstruation", "Menopause", "Urinary tract infection", "Kidney stone", "Appendicitis", "Peritonitis",
+      "Gastroenteritis", "Dysentery", "Amoebiasis", "Giardiasis", "Hookworm infection", "Ascariasis", "Schistosomiasis", "Chikungunya", "Zika fever", "Japanese encephalitis",
+      "Filariasis", "Pertussis", "Diphtheria", "Polio", "Vaccination", "Immunization", "Herd immunity", "Epidemic", "Quarantine", "Isolation (health care)", "Personal protective equipment", "Face mask"
+    ]},
+    {"tier": "full", "category": "Wikipedia · Philippines hazards", "disaster_types": "typhoon, flood, earthquake, volcano", "titles": [
+      "Philippines", "Geography of the Philippines", "Climate of the Philippines", "Luzon", "Visayas", "Mindanao", "1990 Luzon earthquake", "2013 Bohol earthquake",
+      "Marikina Valley Fault System", "Philippine Fault Zone", "Mount Kanlaon", "Bulusan", "Kanlaon Volcano", "Mount Apo", "Taal Lake", "Manila", "Metro Manila", "Cebu",
+      "Davao City", "Tropical cyclone naming", "Tropical cyclone warnings and watches", "Philippine Area of Responsibility", "Rainy season", "Dry season", "Southwest monsoon",
+      "Heavy rain", "Storm drain", "Flood control", "Dam", "River", "Watershed", "Deforestation", "Landslide dam", "Rice terraces of the Philippine Cordilleras",
+      "Filipino cuisine", "Tagalog language", "Filipino language", "Philippine English", "Barangay", "Local government in the Philippines"
+    ]},
+    {"tier": "full", "category": "Wikipedia · Chemistry & materials safety", "disaster_types": "typhoon, flood", "titles": [
+      "Carbon monoxide", "Carbon dioxide", "Hydrogen sulfide", "Methane", "Liquefied petroleum gas", "Kerosene", "Diesel fuel", "Gasoline", "Ethanol", "Methanol",
+      "Ammonia", "Hydrochloric acid", "Sulfuric acid", "Sodium hydroxide", "Lye", "Vinegar", "Baking soda", "Salt", "Sugar", "Potassium permanganate", "Hand sanitizer",
+      "Disinfectant", "Chemical burn", "Toxic gas", "Mercury poisoning", "Lead poisoning", "Asbestos", "Pesticide", "Rat poison", "Household chemicals", "Safety data sheet"
+    ]},
+    {"tier": "full", "category": "Wikipedia · Society & logistics", "disaster_types": "typhoon, flood, earthquake", "titles": [
+      "Humanitarian aid", "Refugee camp", "Disaster relief", "Relief supplies", "Food bank", "Barter", "Mutual aid", "Rationing", "Supply chain", "Logistics",
+      "Self-sufficiency", "Homesteading", "Off-the-grid", "Prepper", "Survivalism", "Continuity of government", "Social collapse", "Famine", "Food security",
+      "Water security", "Public health", "Epidemiology", "Triage", "Mass-casualty incident", "Incident Command System", "Evacuation", "Shelter in place", "Safe room",
+      "Emergency operations center", "Emergency service", "Fire department", "Police", "Ambulance", "Paramedic", "Nurse", "Physician", "Midwife", "Community health worker"
+    ]}
   ]
 }

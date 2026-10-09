@@ -92,9 +92,10 @@ describe('fmtMB', () => {
 describe('pack catalog sizes', () => {
   it('reports the real measured size of every built pack, not a guess', () => {
     for (const p of PACKS) {
-      // Built packs are a few KB, so a stale multi-MB guess means sizes.json is out of date.
+      // Built packs are KB to a few MB (Wikipedia packs are the largest, ~1.7 MB). The old
+      // hard-coded guesses were 15-40 MB, so anything that large means sizes.json is stale.
       expect(p.sizeMB, `${p.id} sizeMB`).toBeGreaterThan(0);
-      expect(p.sizeMB, `${p.id} sizeMB`).toBeLessThan(1);
+      expect(p.sizeMB, `${p.id} sizeMB`).toBeLessThan(5);
     }
   });
 

@@ -51,11 +51,19 @@
       "version": 1
     },
     {
-      "id": "wikipedia",
-      "path": "/packs/wikipedia.json",
-      "size": 250542,
-      "sha256": "4f528c3b52489042b0f988b829a067360c3a6a69473f7bbf9146284bec03620c",
-      "articles": 39,
+      "id": "wikipedia-essentials",
+      "path": "/packs/wikipedia-essentials.json",
+      "size": 709444,
+      "sha256": "7ae0fa4639e7abf14de7103e59a8da39d9fc3e9948f74b052c2b1d9d2f69cae9",
+      "articles": 90,
+      "version": 1
+    },
+    {
+      "id": "wikipedia-prepared",
+      "path": "/packs/wikipedia-prepared.json",
+      "size": 1651288,
+      "sha256": "8f867e99aab982edb6cdfc7f0110765bde517505f93552ac98a519876dd9a0c2",
+      "articles": 169,
       "version": 1
     }
   ],

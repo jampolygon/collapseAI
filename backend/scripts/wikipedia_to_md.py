@@ -2,7 +2,7 @@
 
 Usage (from the repository root, needs internet):
     python backend/scripts/wikipedia_to_md.py     # reads backend/scripts/wikipedia_articles.json
-    npm run packs                                 # builds frontend/public/packs/wikipedia.json
+    npm run packs                                 # builds frontend/public/packs/wikipedia-{essentials,prepared,full}.json
 
 Text is plain text from the MediaWiki API (CC BY-SA 4.0). Every article keeps its page link,
 revision number and date in `source:`. Only the Python standard library is used.
@@ -105,58 +105,83 @@ def clean(text: str, max_chars: int) -> str:
     return "\n\n".join(kept).strip()
 
 
-def build(entries: list[dict], max_chars: int, pause: float) -> tuple[str, list[str]]:
+TIERS = {  # tier -> (pack name, max body characters per article)
+    "essentials": ("Wikipedia: Essentials", 8000),
+    "prepared": ("Wikipedia: Prepared", 10000),
+    "full": ("Wikipedia: Full Survival", 12000),
+}
+CACHE = ROOT / "backend/data/wikipedia-cache"  # git-ignored; makes re-runs fast and offline-friendly
+
+
+def cached_fetch(title: str, pause: float) -> dict | None:
+    CACHE.mkdir(parents=True, exist_ok=True)
+    path = CACHE / (re.sub(r"[^A-Za-z0-9]+", "_", title) + ".json")
+    if path.exists():
+        return json.loads(path.read_text(encoding="utf-8"))
+    page = fetch(title)
+    time.sleep(pause)
+    if page:
+        path.write_text(json.dumps(page, ensure_ascii=False), encoding="utf-8")
+    return page
+
+
+def build_pack(tier: str, entries: list[dict], seen: set[str], pause: float) -> tuple[str, list[str], int]:
+    name, max_chars = TIERS[tier]
     today = date.today().isoformat()
     lines = [
-        "---", "id: wikipedia", "name: Wikipedia Essentials",
+        "---", f"id: wikipedia-{tier}", f"name: {name}",
         "license: CC BY-SA 4.0. Text from Wikipedia contributors (en.wikipedia.org); each article links to its page and history.",
         "version: 1", f"updated: {today}", f"last_verified: {today}", "---", "",
     ]
     missing: list[str] = []
-    seen: set[str] = set()
+    count = 0
     for entry in entries:
         title = entry["title"]
         try:
-            page = fetch(title)
+            page = cached_fetch(title, pause)
         except (urllib.error.URLError, TimeoutError, ValueError) as exc:
             missing.append(f"{title} ({exc})")
             continue
-        time.sleep(pause)
         if not page:
             missing.append(f"{title} (no such page)")
             continue
         slug = re.sub(r"[^a-z0-9]+", "-", page["title"].lower()).strip("-")
         body = clean(page["text"], max_chars)
-        if slug in seen or len(body) < 200:
+        if slug in seen or len(body) < 300:
             missing.append(f"{title} (duplicate or too short)")
             continue
         seen.add(slug)
+        count += 1
         url = "https://en.wikipedia.org/wiki/" + urllib.parse.quote(page["title"].replace(" ", "_"))
         lines += [
-            f"# {page['title']}", f"category: {entry.get('category', 'Wikipedia')}",
+            f"# {page['title']}", f"category: {entry['category']}",
             f"source: Wikipedia, \"{page['title']}\" (revision {page['revid']}, {page['timestamp'][:10]}), CC BY-SA 4.0, {url}",
+            f"tags: {entry.get('tags') or title.lower()}",
         ]
-        if entry.get("tags"):
-            lines.append(f"tags: {entry['tags']}")
         if entry.get("disaster_types"):
             lines.append(f"disaster_types: {entry['disaster_types']}")
         lines += [f"last_verified: {today}", "", body, ""]
-        print(f"ok  {page['title']}: {len(body)} chars")
-    return "\n".join(lines).rstrip() + "\n", missing
+    return "\n".join(lines).rstrip() + "\n", missing, count
 
 
 def main(argv: list[str] | None = None) -> int:
     cli = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     cli.add_argument("--list", type=Path, default=HERE / "wikipedia_articles.json")
-    cli.add_argument("--out", type=Path, default=ROOT / "backend/content/wikipedia.md")
-    cli.add_argument("--max-chars", type=int, default=6000, help="maximum body characters per article")
-    cli.add_argument("--pause", type=float, default=0.3, help="seconds between requests (be polite to Wikipedia)")
+    cli.add_argument("--out-dir", type=Path, default=ROOT / "backend/content")
+    cli.add_argument("--pause", type=float, default=0.25, help="seconds between requests (be polite to Wikipedia)")
     args = cli.parse_args(argv)
-    entries = json.loads(args.list.read_text(encoding="utf-8"))["articles"]
-    markdown, missing = build(entries, args.max_chars, args.pause)
-    args.out.write_text(markdown, encoding="utf-8", newline="\n")
-    print(f"wrote {args.out} ({len(markdown)} bytes)")
-    for item in missing:
+    groups = json.loads(args.list.read_text(encoding="utf-8"))["groups"]
+    seen: set[str] = set()
+    all_missing: list[str] = []
+    for tier in TIERS:  # essentials first, so a title in two tiers stays in the smaller kit
+        entries = [{"title": t, "category": g["category"], "disaster_types": g.get("disaster_types", "")}
+                   for g in groups if g["tier"] == tier for t in g["titles"]]
+        markdown, missing, count = build_pack(tier, entries, seen, args.pause)
+        out = args.out_dir / f"wikipedia-{tier}.md"
+        out.write_text(markdown, encoding="utf-8", newline="\n")
+        print(f"{out.name}: {count} articles, {len(markdown) / 1024:.0f} KB")
+        all_missing += [f"[{tier}] {m}" for m in missing]
+    for item in all_missing:
         print(f"skipped: {item}", file=sys.stderr)
     return 0
 
