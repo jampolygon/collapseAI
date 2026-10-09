@@ -63,7 +63,8 @@ def chunk_article(pack: dict[str, Any], article: dict[str, Any]) -> list[dict[st
 def load_packs(directory: Path, selected: list[str] | None = None) -> tuple[list[dict[str, Any]], list[Path]]:
     if not directory.is_dir():
         raise EvalError(f"Knowledge directory does not exist: {directory}")
-    files = sorted(directory.glob("*.json"))
+    # sizes.json (pack size index from the Node builder) lives next to the packs but is not a pack
+    files = sorted(p for p in directory.glob("*.json") if p.name != "sizes.json")
     if selected:
         files = [directory / f"{pack}.json" for pack in selected]
     if not files:
