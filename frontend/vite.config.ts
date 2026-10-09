@@ -2,7 +2,8 @@ import { defineConfig, loadEnv, type ProxyOptions, type ViteDevServer } from 'vi
 import react from '@vitejs/plugin-react';
 import basicSsl from '@vitejs/plugin-basic-ssl';
 import { createReadStream } from 'node:fs';
-import { readFile, realpath, stat } from 'node:fs/promises';
+import { readdir, readFile, realpath, stat, writeFile } from 'node:fs/promises';
+import { createHash } from 'node:crypto';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -89,6 +90,43 @@ function localMapAssetsPlugin(releaseSelected: boolean) {
   return { name: 'collapseai-local-map-assets', configureServer: configure, configurePreviewServer: configure };
 }
 
+// App shell: after each build, list every file the app needs to open and run offline
+// (HTML, JS chunks incl. lazy screens, CSS, the AI engine .wasm, map fonts/sprites, icons)
+// in precache.json, and stamp the build version into sw.js so phones pick up updates.
+// Big user downloads (packs, models, map regions) are NOT here: they have their own managers.
+function appShellPrecachePlugin() {
+  let outDir = '';
+  const skip = (rel: string) =>
+    /^(packs|maps|offline-maps|models)\//.test(rel) || ['sw.js', 'precache.json', '_headers'].includes(rel) || rel.endsWith('.txt') || rel.endsWith('.map');
+  const walk = async (dir: string, base = ''): Promise<{ path: string; size: number }[]> => {
+    const out: { path: string; size: number }[] = [];
+    for (const entry of await readdir(dir, { withFileTypes: true })) {
+      const rel = base ? `${base}/${entry.name}` : entry.name;
+      if (entry.isDirectory()) out.push(...(await walk(path.join(dir, entry.name), rel)));
+      else if (!skip(rel)) out.push({ path: rel, size: (await stat(path.join(dir, entry.name))).size });
+    }
+    return out;
+  };
+  return {
+    name: 'collapseai-app-shell-precache',
+    apply: 'build' as const,
+    configResolved(config: { root: string; build: { outDir: string } }) {
+      outDir = path.resolve(config.root, config.build.outDir);
+    },
+    async closeBundle() {
+      const files = (await walk(outDir)).sort((a, b) => a.path.localeCompare(b.path));
+      const version = createHash('sha256').update(JSON.stringify(files)).digest('hex').slice(0, 12);
+      const urls = ['./', ...files.map((f) => `./${f.path.split('/').map(encodeURIComponent).join('/')}`)];
+      const bytes = files.reduce((n, f) => n + f.size, 0);
+      await writeFile(path.join(outDir, 'precache.json'), JSON.stringify({ version, bytes, urls }, null, 1));
+      const swPath = path.join(outDir, 'sw.js');
+      const sw = await readFile(swPath, 'utf8');
+      await writeFile(swPath, `const SHELL_VERSION = '${version}';\n${sw}`);
+      console.log(`app shell: ${urls.length} files, ${(bytes / 1e6).toFixed(1)} MB, version ${version}`);
+    },
+  };
+}
+
 export default defineConfig(({ mode }) => {
   const environment = loadEnv(mode, process.cwd(), 'COLLAPSEAI_');
   const hub = environment.COLLAPSEAI_MAP_HUB_URL;
@@ -104,7 +142,7 @@ export default defineConfig(({ mode }) => {
     };
   }
   return {
-    plugins: [react(), ...(mode === 'phone' ? [basicSsl()] : []), ...(!hub ? [localMapAssetsPlugin(Boolean(release))] : [])],
+    plugins: [react(), appShellPrecachePlugin(), ...(mode === 'phone' ? [basicSsl()] : []), ...(!hub ? [localMapAssetsPlugin(Boolean(release))] : [])],
     base: './',
     // .trycloudflare.com: temporary HTTPS demo links (cloudflared quick tunnel) for phone testing
     server: { headers: isolation, host: true, proxy, allowedHosts: ['.trycloudflare.com'] },

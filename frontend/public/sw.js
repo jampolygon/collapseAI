@@ -1,6 +1,17 @@
-// App-shell service worker: network first for pages, cache first for assets.
-// Big files (models, packs) are NOT cached here; they live in OPFS via the download manager.
-const CACHE = 'collapseai-app';
+// App-shell service worker: makes CollapseAI open and run with no internet.
+//
+// Install: download EVERY file in precache.json (written at build time: HTML, all JS chunks including
+// screens you never opened, CSS, the AI engine .wasm, map fonts/sprites, icons). The worker only
+// counts as installed once all of them are cached, so "installed" really means "works offline".
+// The build stamps SHELL_VERSION at the top of this file, so each new build is a new worker and
+// phones update cleanly. Old build files are removed on activate.
+//
+// Big user downloads (packs, models, map regions) are NOT cached here; they live in OPFS / their
+// own managers. In `vite dev` this file is not registered.
+
+/* global SHELL_VERSION */
+const VERSION = typeof SHELL_VERSION === 'string' ? SHELL_VERSION : 'dev';
+const CACHE = 'collapseai-app'; // shared name: the map downloader and system status read it too
 // ignoreVary: module scripts send an Origin header; cached copies were stored without one
 const MATCH = { ignoreVary: true };
 
@@ -11,15 +22,40 @@ async function remember(request, response) {
   return response;
 }
 
-self.addEventListener('install', () => self.skipWaiting());
+async function precacheList() {
+  const res = await fetch(`./precache.json?v=${VERSION}`, { cache: 'no-store' });
+  if (!res.ok) throw new Error(`precache.json: HTTP ${res.status}`);
+  const { urls } = await res.json();
+  return urls.map((u) => new URL(u, self.registration.scope).href);
+}
+
+self.addEventListener('install', (e) => e.waitUntil((async () => {
+  const urls = await precacheList();
+  const cache = await caches.open(CACHE);
+  // cache: 'reload' skips the HTTP cache so a new build never stores an old file
+  await Promise.all(urls.map(async (url) => {
+    const res = await fetch(url, { cache: 'reload' });
+    if (!res.ok) throw new Error(`${url}: HTTP ${res.status}`);
+    await cache.put(url, res);
+  }));
+  await self.skipWaiting();
+})()));
+
 self.addEventListener('activate', (e) => e.waitUntil((async () => {
   const cache = await caches.open(CACHE);
-  // Remove redundant archives cached by the previous map downloader.
+  let keep = null;
+  try { keep = new Set(await precacheList()); } catch { /* offline during activate: keep everything */ }
   for (const request of await cache.keys()) {
-    if (new URL(request.url).pathname.endsWith('.pmtiles')) await cache.delete(request);
+    const path = new URL(request.url).pathname;
+    // Old map archives from an earlier downloader, and JS/CSS/wasm from previous builds.
+    if (path.endsWith('.pmtiles') || (keep && path.includes('/assets/') && !keep.has(request.url))) await cache.delete(request);
   }
   await self.clients.claim();
 })()));
+
+self.addEventListener('message', (e) => {
+  if (e.data === 'version') e.source?.postMessage({ type: 'shell-version', version: VERSION });
+});
 
 self.addEventListener('fetch', (e) => {
   const req = e.request;
@@ -37,15 +73,17 @@ self.addEventListener('fetch', (e) => {
     return;
   }
 
+  // Pages: network first (to get new builds), cached shell when offline.
   if (req.mode === 'navigate') {
     e.respondWith(
       fetch(req)
         .then(res => remember(req, res))
-        .catch(() => caches.match(req, MATCH).then((r) => r || caches.match('./', MATCH))),
+        .catch(() => caches.match(req, MATCH).then((r) => r || caches.match(new URL('./', self.registration.scope).href, MATCH))),
     );
     return;
   }
 
+  // Everything else (hashed assets, wasm, fonts): cache first, network as fallback.
   e.respondWith(
     caches.match(req, MATCH).then(
       (hit) =>
