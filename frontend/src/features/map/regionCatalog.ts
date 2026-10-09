@@ -4,6 +4,17 @@ import { MAX_MAP_ARCHIVE_BYTES } from './mapTypes';
 const MAP_ASSET_BASE = `${import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL : `${import.meta.env.BASE_URL}/`}offline-maps/`;
 export const MAP_CATALOG_URL = `${MAP_ASSET_BASE}regions.json`;
 
+// Intended coverage, not a claim that any archive exists.
+export const EXPECTED_MAP_REGIONS = [
+  { id: 'luzon', name: 'Luzon' },
+  { id: 'visayas', name: 'Visayas' },
+  { id: 'mindanao', name: 'Mindanao' },
+] as const;
+
+export function resolveMapAssetUrl(path: string, base = new URL(import.meta.env.BASE_URL, document.baseURI).href): string {
+  return new URL(path.replace(/^(?:\.\/|\/)/, ''), base).href;
+}
+
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
@@ -29,7 +40,7 @@ function parseRegion(value: unknown): MapRegion {
   }
   if (
     typeof pmtilesUrl !== 'string' ||
-    !/^(?:\.\/|\/)?offline-maps\/[a-z0-9-]+\.pmtiles$/.test(pmtilesUrl)
+    !/^(?:\.\/|\/)?(?:offline-maps|maps)\/[a-z0-9-]+\.pmtiles$/.test(pmtilesUrl)
   ) {
     throw new Error(`Map region "${id}" does not point to a supported same-origin map asset.`);
   }
@@ -83,7 +94,7 @@ export function parseMapCatalog(value: unknown): MapCatalog {
 
 export async function loadMapCatalog(signal?: AbortSignal): Promise<MapCatalog> {
   const response = await fetch(MAP_CATALOG_URL, { signal, cache: 'no-store' });
-  if (response.status === 404) throw new Error('Metro Manila map files have not been published yet.');
+  if (response.status === 404) return { version: 1, updatedAt: '1970-01-01T00:00:00Z', attribution: '© OpenStreetMap contributors', regions: [] };
   if (!response.ok) throw new Error(`Could not load the offline-map catalog (HTTP ${response.status}).`);
   let value: unknown;
   try {

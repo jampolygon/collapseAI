@@ -131,7 +131,7 @@ The builder is `backend/scripts/build-packs.mjs` (zero dependencies, Node only â
 `backend/scripts/build_packs.py` is the original and produces the same JSON, if you prefer Python
 (`npm run packs:py`). Run `npm run packs:check` to fail if the checked-in packs are out of date.
 
-Per-article fields, all optional:
+Per-article fields (`category` is required by Python Pack Builder v2):
 
 | Field | Meaning |
 |---|---|
@@ -153,9 +153,11 @@ frontend/             React + TypeScript PWA and browser AI
   src/                screens, search, downloads, on-device inference
   public/             service worker, manifest, icons, generated packs
   package.json        frontend dependencies and Vite commands
-backend/              Python content tooling (no runtime API server yet)
+backend/              content/evaluation tooling and optional FastAPI LAN Hub
   content/            editable knowledge pack Markdown
-  scripts/            knowledge pack builder
+  scripts/            knowledge pack builders and offline map provisioning
+  hub/                optional local file server and llama-server proxy
+  evals/              Python evaluation harness
 package.json          workspace commands; run npm commands here
 package-lock.json     shared dependency lockfile
 vercel.json           deploys frontend/dist from the repository root
@@ -170,33 +172,31 @@ Generated JSON stays in `frontend/public/packs/` for static hosting and offline 
 See [backend/README.md](backend/README.md) for the content workflow and
 [docs/SYSTEM_AUDIT.md](docs/SYSTEM_AUDIT.md) for the initial system audit.
 
-### Offline maps
+### Offline maps and optional LAN Hub
 
-The Map screen includes the offline map viewer, local GPS positioning, and prepared-region
-download/storage flow. Map archives are binary release assets and are not checked into the app.
-The current contract expects `regions.json` and a Metro Manila `.pmtiles` archive on the
-`offline-maps-v1` GitHub Release. The app accesses those files through same-origin `/offline-maps/`
-routes because GitHub Release assets do not permit browser CORS; Vite proxies this route in
-development and Vercel rewrites it in production. Each catalog entry must provide a real byte size, SHA-256,
-geographic bounds/center, revision, update date, and the `protomaps-basemaps` schema identifier.
-`pmtilesUrl` must use the matching same-origin route, such as
-`./offline-maps/metro-manila.pmtiles`; the matching release asset filename is
-`metro-manila.pmtiles`.
-Downloads are capped at 128 MB, validated as PMTiles v3 vector archives, and stored in IndexedDB.
+The Map view uses the existing MapLibre/PMTiles renderer with locally bundled
+assets and verified IndexedDB storage. Luzon, Visayas and Mindanao show honest
+missing-file states until real extracts are supplied. No archives are included.
+The standalone PWA has no online tile or backend requirement after preparation.
+See [the maps audit and provisioning guide](docs/OFFLINE_MAPS.md) for existing
+architecture, fixes, extraction commands and remaining device tests.
 
-**No Metro Manila archive or release catalog has been published yet.** The Map screen will say
-so until the assets exist; do not fabricate catalog values or claim a region is ready offline.
-Emergency POIs are also intentionally empty pending a sourced, independently verified dataset.
-OSM attribution is displayed in the map. Offline routing, live conditions, arbitrary-area
-downloads, and saved places are not available.
+FastAPI is an optional local edge backend: it serves packs, models and maps with
+HTTP Range support and proxies a separately running local llama-server. The
+core browser AI continues using wllama/WASM without it. From the root:
 
-To publish coverage, build the PMTiles archive from permitted OSM source data using the matching
-Protomaps basemap schema, review attribution/licensing, calculate the exact file byte count and
-SHA-256, then attach both the archive and a matching `regions.json` manifest to the release.
-Test the deployed release proxy and airplane-mode map rendering on the target phone before
-announcing coverage. Never bulk-download tiles from `tile.openstreetmap.org`.
-Bundled Noto Sans glyphs and sprite artwork include their upstream OFL and MIT license notices
-under `frontend/public/map-assets/`.
+```powershell
+python -m pip install -r backend/hub/requirements.txt
+python backend/scripts/build_packs.py
+python -m uvicorn backend.hub.app:app --host 0.0.0.0 --port 8000
+```
+
+No internet is required once dependencies and resource files are provisioned.
+See [Hub setup](backend/hub/README.md) for directory/environment configuration,
+llama-server, endpoints, Range checks and LAN phone access. There is no
+Connect-to-Hub AI workflow yet; the optional Vite map bridge only reuses the
+existing map downloader. Raw LAN HTTP API access is distinct from the secure
+context required for the PWA's GPS, storage and install behavior.
 
 ### Frontend appearance
 

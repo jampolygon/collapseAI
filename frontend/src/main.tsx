@@ -18,7 +18,7 @@ if ('serviceWorker' in navigator && import.meta.env.PROD) {
     const urls = performance
       .getEntriesByType('resource')
       .map((e) => e.name)
-      .filter((u) => u.startsWith(location.origin) && !u.includes('/packs/'));
+      .filter((u) => u.startsWith(location.origin) && !/\/(?:packs|models|api|v1)\/|\.pmtiles(?:\?|$)/.test(u));
     const cache = await caches.open('collapseai-app');
     // + the AI engine (only fetched when the AI starts) and app icons
     const extra = [wasmUrl, './', './icon.svg', './manifest.webmanifest'].map((u) => new URL(u, location.href).href);

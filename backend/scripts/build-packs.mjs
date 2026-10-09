@@ -34,6 +34,7 @@
  */
 
 import { readFileSync, writeFileSync, mkdirSync, readdirSync } from 'node:fs';
+import { createHash } from 'node:crypto';
 import { resolve, relative, sep } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
@@ -151,7 +152,7 @@ export function parse(raw, file = '<string>', today = new Date().toISOString().s
     license: meta.license || '',
   };
   if (meta.keywords) pack.keywords = list(meta.keywords);
-  pack.updated = meta.updated || today;
+  pack.updated = meta.updated || meta.last_verified || today;
   pack.articles = articles;
 
   if (!pack.id) throw new Error(`${file}: frontmatter is missing "id"`);
@@ -171,6 +172,7 @@ export function main(argv = process.argv.slice(2)) {
   mkdirSync(OUT, { recursive: true });
 
   const sizes = {};
+  const resources = [];
   let stale = 0;
 
   for (const md of readdirSync(SRC).sort()) {
@@ -195,6 +197,8 @@ export function main(argv = process.argv.slice(2)) {
 
     writeFileSync(dest, json, 'utf8');
     sizes[pack.id] = Buffer.byteLength(json, 'utf8');
+    resources.push({ id: pack.id, path: `/packs/${pack.id}.json`, size: sizes[pack.id],
+      sha256: createHash('sha256').update(json, 'utf8').digest('hex'), articles: pack.articles.length, version: pack.version });
     // Print the path relative to the repo root, so the log reads the same from any cwd.
     const shown = relative(resolve(BACKEND, '..'), dest).split(sep).join('/');
     console.log(`${shown}: ${pack.articles.length} articles, ${(sizes[pack.id] / 1000).toFixed(1)} KB`);
@@ -209,6 +213,21 @@ export function main(argv = process.argv.slice(2)) {
   // Byte sizes the app reads, so Prepare can show real totals instead of hard-coded guesses.
   writeFileSync(resolve(OUT, 'sizes.json'), toJson(sizes), 'utf8');
   console.log('public/packs/sizes.json written');
+  // Preserve catalog model metadata maintained by Pack Builder v2, but never
+  // leave the existing resource manifest with stale pack hashes after a rebuild.
+  const manifestPath = resolve(OUT, '..', 'manifest.json');
+  let manifest;
+  try { manifest = JSON.parse(readFileSync(manifestPath, 'utf8')); }
+  catch (error) {
+    if (error.code !== 'ENOENT') throw error;
+    console.warn('No resource manifest found. Run "npm run packs:py" to create catalog model metadata.');
+  }
+  if (manifest) {
+    if (manifest.schema_version !== 1 || !Array.isArray(manifest.models)) throw new Error('Invalid resource manifest; run "npm run packs:py"');
+    manifest.packs = resources;
+    writeFileSync(manifestPath, JSON.stringify(manifest, null, 2) + '\n', 'utf8');
+    console.log('public/manifest.json pack metadata refreshed (run packs:py after catalog model edits)');
+  }
 }
 
 const invokedDirectly = import.meta.url === pathToFileURL(process.argv[1] ?? '').href;

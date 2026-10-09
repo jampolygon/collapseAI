@@ -6,5 +6,10 @@ dist/
 .env*
 __pycache__/
 *.gguf
+*.pmtiles
+*.mbtiles
+*.osm.pbf
+backend/data/
+.venv/
 backend/evals/results/*
 !backend/evals/results/.gitkeep

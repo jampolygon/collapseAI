@@ -11,7 +11,7 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run src",
     "test:watch": "vitest",
-    "test:ui": "node --test tests/ui.test.mjs"
+    "test:ui": "node --test tests/ui.test.mjs tests/maps-sw.test.mjs"
   },
   "keywords": [],
   "author": "",

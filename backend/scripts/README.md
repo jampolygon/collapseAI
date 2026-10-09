@@ -1,8 +1,15 @@
 # Pack Builder v2
 
+Map provisioning is separate: `build_maps.py` wraps the external go-pmtiles CLI
+against local archives. See [the map audit/guide](../../docs/OFFLINE_MAPS.md).
+It does not download source maps or extend the pack resource manifest.
+
 Build validated knowledge packs and an exact-byte resource manifest using only
-Python 3.10+ and the standard library. The frontend runtime, catalog, pack schema,
-and browser download/retrieval behavior are unchanged.
+Python 3.10+ and the standard library. The builder also preserves the newer Node
+pack metadata (`tags`, `disaster_types`, `last_verified`, `keywords`, `updated`).
+Explicit `updated` or pack `last_verified` dates make that metadata deterministic.
+Node builds refresh existing manifest pack hashes; run Python after model catalog
+edits to regenerate model metadata. Browser downloads remain independent.
 
 From the repository root:
 

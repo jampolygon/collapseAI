@@ -125,6 +125,11 @@ describe('parse', () => {
 });
 
 describe('toJson', () => {
+  it('keeps an explicit verification date stable across different build dates', () => {
+    const source = pack('# A\ncategory: Water\n\nx', { last_verified: '2026-10-09' });
+    expect(parse(source, 'fixture', '2027-01-01').updated).toBe('2026-10-09');
+    expect(toJson(parse(source, 'fixture', '2027-01-01'))).toBe(toJson(parse(source, 'fixture', '2028-01-01')));
+  });
   it('matches Python json.dumps(indent=1): 1-space indent, no BOM, no trailing newline', () => {
     const json = toJson({ id: 'a', name: 'B', version: 1, updated: '2026-01-01', articles: [{ id: 'x' }] });
     expect(json).toBe(

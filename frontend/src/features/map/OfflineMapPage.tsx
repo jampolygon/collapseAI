@@ -3,7 +3,7 @@ import { Icon } from '../../components/Icon';
 import type { Theme } from '../../ui/theme';
 import { deleteDownloadedRegion, listDownloadedRegions } from './offlineMapRepository';
 import { downloadMapRegion, type DownloadProgress } from './regionDownload';
-import { loadMapCatalog, regionContains } from './regionCatalog';
+import { EXPECTED_MAP_REGIONS, loadMapCatalog, regionContains } from './regionCatalog';
 import type { DownloadedMapRegion, MapCatalog, MapCenter, MapRegion } from './mapTypes';
 import { fmtBytes } from '../../lib/device';
 import OfflineMapCanvas from './OfflineMapCanvas';
@@ -61,7 +61,7 @@ export default function OfflineMapPage({ online, theme }: Props) {
   const publishedById = useMemo(() => new Map((catalog?.regions ?? []).map(region => [region.id, region])), [catalog]);
 
   const refreshDownloaded = useCallback(async () => {
-    const records = await listDownloadedRegions();
+    const records = await listDownloadedRegions(setDownloadError);
     setDownloaded(records);
     setSelectedId(current => current || records[0]?.id || '');
   }, []);
@@ -82,10 +82,10 @@ export default function OfflineMapPage({ online, theme }: Props) {
 
   useEffect(() => {
     let active = true;
-    void listDownloadedRegions().then(records => {
+    void listDownloadedRegions(message => { if (active) setDownloadError(message); }).then(records => {
       if (active) {
         setDownloaded(records);
-        setSelectedId(records[0]?.id ?? '');
+        setSelectedId(current => current || records[0]?.id || '');
       }
     }).catch(error => {
       if (active) setDownloadError(error instanceof Error ? error.message : 'Could not read locally stored maps.');
@@ -118,7 +118,7 @@ export default function OfflineMapPage({ online, theme }: Props) {
         setLocationState({ kind: 'ready', message: `Location found inside downloaded coverage: ${downloadedMatch.name}.` });
       } else if (publishedMatch) {
         setSelectedId(publishedMatch.id);
-        setLocationState({ kind: 'ready', message: `Location is within ${publishedMatch.name}. Download that region while online to use it offline.` });
+        setLocationState({ kind: 'ready', message: `Location is within ${publishedMatch.name}. Download it from a reachable map source to use it offline.` });
       } else {
         setLocationState({ kind: 'ready', message: 'Location found, but no downloaded map covers it. Choose a supported region below.' });
       }
@@ -169,7 +169,7 @@ export default function OfflineMapPage({ online, theme }: Props) {
   const matchingDownloaded = location
     ? downloaded.find(region => regionContains(region, location))
     : undefined;
-  const activeRegion = location ? matchingDownloaded : selectedDownloaded;
+  const activeRegion = selectedDownloaded;
   const matchingPublished = location ? catalog?.regions.find(region => regionContains(region, location)) : undefined;
 
   return (
@@ -188,14 +188,14 @@ export default function OfflineMapPage({ online, theme }: Props) {
           <span>Choose a region</span>
           <select value={selectedId} onChange={event => { setSelectedId(event.target.value); setLocation(null); setLocationState(INITIAL_LOCATION); }} aria-label="Choose a map region">
             <option value="">Select a region</option>
-            {[...new Set([...downloaded.map(region => region.id), ...(catalog?.regions.map(region => region.id) ?? [])])].map(id => {
-              const region = regionsById.get(id) ?? publishedById.get(id);
+            {[...new Set([...EXPECTED_MAP_REGIONS.map(region => region.id), ...downloaded.map(region => region.id), ...(catalog?.regions.map(region => region.id) ?? [])])].map(id => {
+              const region = regionsById.get(id) ?? publishedById.get(id) ?? EXPECTED_MAP_REGIONS.find(region => region.id === id);
               if (!region) return null;
               const storedRegion = regionsById.get(id);
               const publishedRegion = publishedById.get(id);
               const update = storedRegion && publishedRegion &&
                 (storedRegion.revision !== publishedRegion.revision || storedRegion.sha256 !== publishedRegion.sha256);
-              return <option key={id} value={id}>{region.name}{update ? ' · Update available' : storedRegion ? ' · Downloaded' : ' · Download available'}</option>;
+              return <option key={id} value={id}>{region.name}{update ? ' · Update available' : storedRegion ? ' · Available on this device' : publishedRegion ? ' · Download available' : ' · Not downloaded (source unavailable)'}</option>;
             })}
           </select>
         </label>
@@ -209,22 +209,23 @@ export default function OfflineMapPage({ online, theme }: Props) {
         <div className="map-notice" role="status">
           <Icon name="info" size={18} />
           <span>{catalogError} {online ? '' : 'Previously downloaded maps remain available offline.'}</span>
-          {online && <button className="link" onClick={() => void refreshCatalog()}>Retry</button>}
+          <button className="link" onClick={() => void refreshCatalog()}>Retry</button>
         </div>
       )}
       {!catalogLoading && catalog?.regions.length === 0 && (
         <div className="map-notice" role="status">
           <Icon name="info" size={18} />
-          <span>The Metro Manila archive has not been published to the offline-maps-v1 GitHub Release yet. Existing downloaded maps remain available below.</span>
+          <span>No regional map files are available from this source. Existing verified maps remain available on this device.</span>
+          <button className="link" onClick={() => void refreshCatalog()}>Refresh</button>
         </div>
       )}
 
       {activeRegion ? (
         <div className="map-active-region">
           <div className="map-region-heading">
-            <div><span className="eyebrow">Ready offline · {activeRegion.revision}</span><h3>{activeRegion.name}</h3><p className="muted tiny">Verified {new Date(activeRegion.verifiedAt).toLocaleDateString()} · {fmtBytes(activeRegion.sizeBytes)}</p></div>
+            <div><span className="eyebrow">Local file verified · {activeRegion.revision}</span><h3>{activeRegion.name}</h3><p className="muted tiny">Verified {new Date(activeRegion.verifiedAt).toLocaleDateString()} · {fmtBytes(activeRegion.sizeBytes)}</p></div>
             <div className="map-region-actions">
-              {updateAvailable && selectedPublished && <button className="primary" disabled={!online || busy} onClick={() => void startDownload(selectedPublished)}>{busy ? 'Updating…' : 'Download update'}</button>}
+              {updateAvailable && selectedPublished && <button className="primary" disabled={busy} onClick={() => void startDownload(selectedPublished)}>{busy ? 'Updating…' : 'Download update'}</button>}
               <button className="danger map-delete" onClick={() => void removeMap(activeRegion)} aria-label={`Delete ${activeRegion.name} map`}><Icon name="trash" size={18} />Delete map</button>
             </div>
           </div>
@@ -250,17 +251,19 @@ export default function OfflineMapPage({ online, theme }: Props) {
               <span className="muted tiny">{fmtBytes(progress.receivedBytes)} of {fmtBytes(progress.totalBytes)}</span>
             </div>
           )}
-          <button className="primary" disabled={!online || busy} onClick={() => void startDownload(selectedPublished)}>
-            {busy ? 'Downloading…' : online ? 'Download for offline use' : 'Connect to download'}
+          <button className="primary" disabled={busy} onClick={() => void startDownload(selectedPublished)}>
+            {busy ? 'Downloading…' : 'Download for offline use'}
           </button>
           {busy && <button onClick={() => controllerRef.current?.abort()}>Cancel</button>}
           <p className="muted tiny">OpenStreetMap data · © OpenStreetMap contributors</p>
         </section>
+      ) : EXPECTED_MAP_REGIONS.some(region => region.id === selectedId) ? (
+        <div className="map-empty"><h3>{EXPECTED_MAP_REGIONS.find(region => region.id === selectedId)?.name} · Not downloaded</h3><p>The map source has no available {selectedId}.pmtiles file. Install a real extract and refresh the catalog.</p></div>
       ) : catalog?.regions.length === 0 && downloaded.length === 0 ? (
         <div className="map-empty">
           <Icon name="compass" size={28} />
           <h3>No offline map available yet</h3>
-          <p>Once the prepared Metro Manila PMTiles archive is published, you can download it here and browse it without internet.</p>
+          <p>Luzon, Visayas and Mindanao are not downloaded. Install real regional PMTiles files at the map source before downloading them here.</p>
           {!online && <p className="muted small">You are offline. No map archive is stored on this device yet.</p>}
         </div>
       ) : location && !matchingDownloaded ? (
