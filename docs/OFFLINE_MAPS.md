@@ -63,7 +63,7 @@ archive/device rendering was not verified in this audit.
 ## New Hub integration
 
 The optional `backend/hub/` discovers actual Luzon/Visayas/Mindanao files, serves
-Range downloads at `/maps/{filename}`, and adapts compatible archives ≤128 MiB
+Range downloads at `/maps/{filename}`, and adapts compatible regional archives ≤128 MiB
 to `/offline-maps/regions.json`. Missing/corrupt files are unavailable. The legacy
 archive route remains an alias. Hashes, sizes and bounds come from actual files.
 
@@ -121,8 +121,7 @@ The wrapper runs `pmtiles extract` and `pmtiles verify`, checks structure and
 output presence, measures size and streams SHA-256. Missing CLI/source/output,
 nonzero exit status, corrupt files and oversized output fail clearly. Outputs
 cannot overwrite the source archive, and a catalog cannot overwrite an archive.
-Outputs
-are staged before replacement and the catalog is published last; disk failure
+Outputs are staged before replacement and the catalog is published last; disk failure
 mid-publication is not a multi-file transaction. The catalog lists selected
 regions only; select all three when exporting a complete static catalog.
 
@@ -140,14 +139,25 @@ or added during this task.
 
 ## Limitations and device checks
 
+The merge adds optional Philippines archives ≤256 MiB, incoming release/build
+workflows and map-click location selection. Regional limits remain 128 MiB.
+SHA-256 is now incremental for both download verification and stored-file reopening.
+The canonical frontend catalog is still `/offline-maps/regions.json`; local files
+live under `frontend/public/maps/`. The optional Hub bridge wins over the opt-in
+release proxy (`COLLAPSEAI_MAPS_RELEASE_BASE`). Country archives require checksum-
+bound revisions, full-country bounds and all expected basemap layer types. The
+incoming catalog snapshot lives in `docs/examples/` because its archive is absent.
+See [README release instructions](../README.md#map-archives-and-release-workflow).
+
 PWA maps remain in-memory/IndexedDB blob downloads: interrupted transfers restart,
 with no OPFS migration. Hub routes support Range for clients that implement
-resume. Files over 128 MiB are downloadable from the Hub but excluded from the
-PWA catalog. Near-limit browser downloads/hash checks can need several hundred
+resume. Regional files over 128 MiB and country files over 256 MiB are downloadable
+from the Hub but excluded from the PWA catalog. Near-limit downloads can need several hundred
 MiB of transient memory. Smaller extracts suit low-memory phones. Without
 persistent permission, browser storage can be evicted.
 
-Bundled Noto Sans Regular/Medium/Italic glyphs cover Unicode 0–511. CJK uses
+Bundled Noto Sans Regular/Medium/Italic glyphs cover Unicode 0–511, with the incoming
+Regular 8192–8447 punctuation range also prepared for offline use. CJK uses
 MapLibre's local ideograph fallback; other scripts/ranges may lack labels.
 Missing local glyphs do not trigger external requests; expand bundled assets
 when real labels require it. Tiles/styles/fonts/sprites/CSS/worker/library code

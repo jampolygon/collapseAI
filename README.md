@@ -198,6 +198,57 @@ Connect-to-Hub AI workflow yet; the optional Vite map bridge only reuses the
 existing map downloader. Raw LAN HTTP API access is distinct from the secure
 context required for the PWA's GPS, storage and install behavior.
 
+### Map archives and release workflow
+
+The same Map view accepts Luzon, Visayas, Mindanao and an optional Philippines
+archive. Regional downloads retain the 128 MiB limit; Philippines is capped at
+256 MiB with incremental SHA-256. IndexedDB still holds a complete Blob, so
+larger downloads need adequate device memory/storage. GPS and map-click location
+selection work with the selected local archive. Map attribution includes
+OpenStreetMap, ESA WorldCover (CC BY 4.0) and Protomaps Basemaps.
+
+There is one browser catalog route: `/offline-maps/regions.json`. Default local
+development and preview serve files from `frontend/public/maps/` and the catalog
+from `frontend/public/offline-maps/regions.json`. No Hub or internet is required.
+`COLLAPSEAI_MAP_HUB_URL` selects the optional Hub bridge and takes priority over
+local assets and `COLLAPSEAI_MAPS_RELEASE_BASE`, the opt-in release proxy. Release
+acquisition may use internet during preparation; downloaded rendering uses only
+local files, worker, fonts, sprites and CSS.
+
+To prepare a real country archive, install go-pmtiles (the workflows pin CLI
+1.31.2), obtain permitted Protomaps source data, then extract and verify it:
+
+```powershell
+pmtiles extract 'C:\map-data\protomaps-source.pmtiles' frontend/public/maps/philippines.pmtiles --bbox=116.8,4.4,126.8,21.3 --minzoom=0 --maxzoom=13
+pmtiles verify frontend/public/maps/philippines.pmtiles
+npm run maps:catalog
+```
+
+Create the output directory first. Reduce zoom/coverage if the output exceeds
+256 MiB. The generator requires country coverage, the expected vector layers,
+actual size/hash/header bounds and a checksum-bound revision. It writes the
+canonical frontend catalog; missing input fails clearly. Large archives remain
+Git-ignored. The incoming metadata is retained only as a provenance example at
+`docs/examples/philippines-regions.example.json`: its referenced archive is not
+present in this checkout, and the example is not used by the app.
+
+`.github/workflows/build-offline-maps.yml` finds a dated official Protomaps build,
+extracts Philippines bounds through zoom 13, verifies the PMTiles file and creates
+the `offline-map-release` artifact. Inspect the artifact and test real offline
+rendering before manually dispatching `.github/workflows/publish-offline-maps.yml`
+with that successful build run ID. Publishing revalidates and uploads exactly
+`regions.json` and `philippines.pmtiles` to `offline-maps-v1`. These workflows are
+explicit provisioning jobs; ordinary builds/tests do not download source maps.
+
+For a release-backed static deployment, provision the published catalog into
+`frontend/public/offline-maps/regions.json` before building, after verifying the
+release exists. Vercel retains the catalog/archive release rewrites and COOP/COEP
+headers; it never needs the local FastAPI Hub. The checked-in empty catalog keeps
+an unprovisioned static build honest. Deployed rewrite behavior and real archives
+still need integration testing. Vite tests cover redirect/range/404 propagation,
+Hub precedence and standalone local Range serving with synthetic fixtures.
+Never bulk-download public OpenStreetMap tile-server tiles.
+
 ### Frontend appearance
 
 The sidebar provides Ask, Prepare, Library, Tools, and Map. Collapse it on desktop or

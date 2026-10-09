@@ -11,5 +11,15 @@
         { "key": "Cross-Origin-Embedder-Policy", "value": "credentialless" }
       ]
     }
+  ],
+  "rewrites": [
+    {
+      "source": "/offline-maps/regions.json",
+      "destination": "https://github.com/jampolygon/collapseAI/releases/download/offline-maps-v1/regions.json"
+    },
+    {
+      "source": "/offline-maps/philippines.pmtiles",
+      "destination": "https://github.com/jampolygon/collapseAI/releases/download/offline-maps-v1/philippines.pmtiles"
+    }
   ]
 }

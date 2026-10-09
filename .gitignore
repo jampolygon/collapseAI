@@ -13,3 +13,4 @@ backend/data/
 .venv/
 backend/evals/results/*
 !backend/evals/results/.gitkeep
+/public/maps/*.pmtiles

@@ -12,6 +12,14 @@ import threading
 from pathlib import Path
 
 REGIONS = (("luzon", "Luzon"), ("visayas", "Visayas"), ("mindanao", "Mindanao"))
+REGIONAL_LIMIT = 128 * 1024 * 1024
+COUNTRY_LIMIT = 256 * 1024 * 1024
+
+
+def map_archive_limit(region_id):
+    return COUNTRY_LIMIT if region_id == "philippines" else REGIONAL_LIMIT
+
+
 MAX_SECTION = 16 * 1024 * 1024
 BASEMAP_LAYERS = {"earth", "landcover", "landuse", "roads", "water", "buildings", "boundaries", "pois", "places"}
 
@@ -116,7 +124,7 @@ def inspect_archive(path: Path) -> dict:
             if not (0 <= min_zoom <= max_zoom <= 26 and -180 <= west < east <= 180 and -90 <= south < north <= 90
                     and west <= center[0] <= east and south <= center[1] <= north and min_zoom <= header[118] <= max_zoom):
                 raise ValueError("Invalid PMTiles bounds, center or zoom levels")
-            return {"size": size, "bounds": bounds, "center": center, "min_zoom": min_zoom, "max_zoom": max_zoom}
+            return {"size": size, "bounds": bounds, "center": center, "min_zoom": min_zoom, "max_zoom": max_zoom, "layers": sorted(ids)}
     except (OSError, ValueError, struct.error, EOFError) as exc:
         raise ValueError(f"{path.name}: {exc}") from exc
 
@@ -142,7 +150,8 @@ class MapDiscovery:
     def _discover(self, hashes):
         result = []
         root = self.directory.resolve()
-        for region_id, name in REGIONS:
+        entries = REGIONS + ((("philippines", "Philippines"),) if (root / "philippines.pmtiles").exists() else ())
+        for region_id, name in entries:
             item = {"id": region_id, "name": name, "filename": f"{region_id}.pmtiles",
                     "path": f"/maps/{region_id}.pmtiles", "size": None, "sha256": None, "available": False}
             try:
@@ -154,7 +163,12 @@ class MapDiscovery:
                     key = (str(path), stat.st_size, stat.st_mtime_ns, stat.st_ctime_ns)
                     cached = self.cache.get(region_id)
                     if cached is None or cached[0] != key:
-                        cached = (key, inspect_archive(path))
+                        metadata = inspect_archive(path)
+                        if region_id == "philippines":
+                            west, south, east, north = metadata["bounds"]
+                            if west > 116.9 or south > 4.5 or east < 126.7 or north < 21.2 or not BASEMAP_LAYERS.issubset(metadata["layers"]):
+                                raise ValueError("Philippines archive lacks required country coverage or basemap layers")
+                        cached = (key, metadata)
                         self.cache[region_id] = cached
                     if hashes and "sha256" not in cached[1]:
                         cached[1]["sha256"] = sha256_file(path)

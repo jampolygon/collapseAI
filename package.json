@@ -15,12 +15,14 @@
     "preview": "npm run preview --workspace @collapse-ai/frontend --",
     "preview:phone": "npm run preview:phone --workspace @collapse-ai/frontend --",
     "typecheck": "npm run typecheck --workspace @collapse-ai/frontend --",
-    "test": "npm test --workspace @collapse-ai/frontend -- && npm run test:packs && npm run test:ui",
+    "test": "npm test --workspace @collapse-ai/frontend -- && npm run test:packs && npm run test:ui && npm run test:map-proxy",
     "test:watch": "npm run test:watch --workspace @collapse-ai/frontend --",
     "test:ui": "npm run test:ui --workspace @collapse-ai/frontend --",
+    "test:map-proxy": "npm run test:map-proxy --workspace @collapse-ai/frontend --",
     "test:packs": "vitest run --dir backend/scripts",
     "packs": "node backend/scripts/build-packs.mjs",
     "packs:check": "node backend/scripts/build-packs.mjs --check",
-    "packs:py": "python backend/scripts/build_packs.py"
+    "packs:py": "python backend/scripts/build_packs.py",
+    "maps:catalog": "node frontend/scripts/prepare-offline-map-release.mjs frontend/public/maps/philippines.pmtiles frontend/public/maps local frontend/public/offline-maps/regions.json"
   }
 }

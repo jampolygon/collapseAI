@@ -3,6 +3,7 @@ import { verifyArchive } from './archiveValidation';
 import { validateStoredRegion } from './offlineMapRepository';
 import * as repository from './offlineMapRepository';
 import { downloadMapRegion } from './regionDownload';
+import { hashMapBlob } from './mapHash';
 import type { DownloadedMapRegion, MapRegion } from './mapTypes';
 
 // Synthetic directory/metadata/tile fixture. This is not geographic map data
@@ -33,6 +34,14 @@ async function metadata(blob = fixture()): Promise<MapRegion> {
 afterEach(() => { vi.restoreAllMocks(); vi.unstubAllGlobals(); vi.unstubAllEnvs(); });
 
 describe('local archive verification', () => {
+  it('hashes multiple stored-file slices without copying the entire Blob', async () => {
+    const bytes = new Uint8Array(2 * 1024 * 1024 + 17);
+    for (let index = 0; index < bytes.length; index++) bytes[index] = index % 251;
+    const expected = [...new Uint8Array(await crypto.subtle.digest('SHA-256', bytes))].map(byte => byte.toString(16).padStart(2, '0')).join('');
+    const blob = new Blob([bytes]);
+    vi.spyOn(blob, 'arrayBuffer').mockRejectedValue(new Error('Whole-file copy is forbidden in this test'));
+    expect(await hashMapBlob(blob, new AbortController().signal)).toBe(expected);
+  });
   it('opens the real PMTiles parser against a synthetic archive', async () => {
     await expect(verifyArchive(await metadata(), fixture())).resolves.toBeUndefined();
   });

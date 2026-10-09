@@ -94,7 +94,7 @@ and nonzero size, not parsed or tested as GGUFs by discovery.
 | GET, HEAD | `/packs/{filename}` | direct `.json` file within configured pack directory |
 | GET, HEAD | `/models/{filename}` | direct `.gguf` file within configured model directory |
 | GET, HEAD | `/maps/{filename}` | direct `.pmtiles` file within configured map directory |
-| GET | `/offline-maps/regions.json` | existing PWA catalog schema, derived from available compatible maps ≤128 MiB |
+| GET | `/offline-maps/regions.json` | existing PWA catalog schema; compatible regional maps ≤128 MiB, optional Philippines ≤256 MiB |
 | GET, HEAD | `/offline-maps/{filename}` | legacy same-origin PMTiles route alias |
 | POST | `/v1/chat/completions` | non-streaming JSON or incremental SSE proxy |
 
@@ -148,6 +148,9 @@ limit. Info hashes are `null` until computed; values are never invented. Hashing
 a large file can delay the first catalog request, but runs outside the event loop.
 Larger valid archives remain downloadable at `/maps/...` and visible in info;
 the current browser downloader deliberately rejects them.
+The merge also discovers `philippines.pmtiles` when installed, checks country
+coverage/all basemap layers and emits its SHA-256-bound revision. The three
+regional missing-file entries remain present regardless of country availability.
 
 ## Another device on the LAN
 

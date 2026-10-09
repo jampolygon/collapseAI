@@ -1,12 +1,9 @@
 import { FileSource, PMTiles, TileType } from 'pmtiles';
 import type { MapRegion } from './mapTypes';
-import { MAX_MAP_ARCHIVE_BYTES } from './mapTypes';
+import { mapArchiveLimit } from './mapTypes';
+import { hashMapBlob } from './mapHash';
 
 const BASEMAP_LAYERS = ['earth', 'landcover', 'landuse', 'roads', 'water', 'buildings', 'boundaries', 'pois', 'places'];
-
-function toHex(bytes: ArrayBuffer): string {
-  return Array.from(new Uint8Array(bytes), value => value.toString(16).padStart(2, '0')).join('');
-}
 
 function vectorLayerIds(metadata: unknown): Set<string> {
   if (typeof metadata !== 'object' || metadata === null || !('vector_layers' in metadata)) {
@@ -19,14 +16,17 @@ function vectorLayerIds(metadata: unknown): Set<string> {
   ));
 }
 
-export async function verifyArchive(region: Pick<MapRegion, 'id' | 'sha256' | 'bounds' | 'sizeBytes'>, blob: Blob, signal = new AbortController().signal): Promise<void> {
+export async function verifyArchive(region: Pick<MapRegion, 'id' | 'sha256' | 'bounds' | 'sizeBytes'> & Partial<Pick<MapRegion, 'revision'>>, blob: Blob, signal = new AbortController().signal, downloadedHash?: string): Promise<void> {
   if (signal.aborted) throw new DOMException('Map download cancelled.', 'AbortError');
-  if (!(blob instanceof Blob) || blob.size !== region.sizeBytes || blob.size === 0 || blob.size > MAX_MAP_ARCHIVE_BYTES) {
+  if (!(blob instanceof Blob) || blob.size !== region.sizeBytes || blob.size === 0 || blob.size > mapArchiveLimit(region.id)) {
     throw new Error('Map verification failed: local archive is missing or has an invalid size.');
   }
   if (!crypto.subtle) throw new Error('This browser cannot verify map downloads. Open CollapseAI in a secure context (HTTPS) and retry.');
-  const actualHash = toHex(await crypto.subtle.digest('SHA-256', await blob.arrayBuffer()));
+  const actualHash = downloadedHash ?? await hashMapBlob(blob, signal);
   if (actualHash !== region.sha256) throw new Error('Map verification failed: the SHA-256 checksum does not match.');
+  if ((region.id === 'philippines' || region.revision?.startsWith('sha256-')) && region.revision !== `sha256-${actualHash}`) {
+    throw new Error('Map verification failed: the catalog revision does not match the downloaded archive.');
+  }
 
   const file = new File([blob], `${region.id}.pmtiles`, { type: 'application/octet-stream' });
   const archive = new PMTiles(new FileSource(file));
@@ -60,8 +60,15 @@ export async function verifyArchive(region: Pick<MapRegion, 'id' | 'sha256' | 'b
   if (header.minLon > west || header.minLat > south || header.maxLon < east || header.maxLat < north) {
     throw new Error('The PMTiles archive bounds do not cover the published region bounds.');
   }
+  if (region.id === 'philippines' && (header.minLon !== west || header.minLat !== south || header.maxLon !== east || header.maxLat !== north)) {
+    throw new Error('The PMTiles archive bounds do not match the published Philippines bounds.');
+  }
   const layers = vectorLayerIds(await archive.getMetadata());
   if (!BASEMAP_LAYERS.some(layer => layers.has(layer))) throw new Error('This archive is not compatible with the CollapseAI basemap style.');
+  if (region.id === 'philippines') {
+    const missing = BASEMAP_LAYERS.filter(layer => !layers.has(layer));
+    if (missing.length) throw new Error(`Philippines basemap is missing required layers: ${missing.join(', ')}.`);
+  }
   // Small extracts can legitimately omit empty layer types.
   if (!header.numAddressedTiles) throw new Error('This map contains no tiles.');
   const centerZoom = header.centerZoom;

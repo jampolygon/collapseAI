@@ -4,15 +4,15 @@ import { createOfflineMapStyle } from './mapStyle';
 import type { MapRegion } from './mapTypes';
 
 const region: MapRegion = {
-  id: 'metro-manila',
-  name: 'Metro Manila',
-  province: 'National Capital Region',
-  pmtilesUrl: './offline-maps/metro-manila.pmtiles',
+  id: 'philippines',
+  name: 'Philippines',
+  province: 'Philippines',
+  pmtilesUrl: './offline-maps/philippines.pmtiles',
   sizeBytes: 1024,
   sha256: 'a'.repeat(64),
-  bounds: [120.85, 14.35, 121.15, 14.8],
-  center: [121, 14.6],
-  revision: '2026-10-01',
+  bounds: [116.5, 4, 127, 22],
+  center: [121.75, 13],
+  revision: `sha256-${'a'.repeat(64)}`,
   updatedAt: '2026-10-01T00:00:00Z',
   tileSchema: 'protomaps-basemaps',
 };
@@ -32,8 +32,22 @@ describe('offline map catalog', () => {
   });
 
   it('rejects external asset URLs and invalid archive sizes', () => {
-    expect(() => parseMapCatalog(catalog([{ ...region, pmtilesUrl: 'https://example.com/metro-manila.pmtiles' }]))).toThrow(/same-origin/);
+    expect(() => parseMapCatalog(catalog([{ ...region, pmtilesUrl: 'https://example.com/philippines.pmtiles' }]))).toThrow(/same-origin/);
+    expect(() => parseMapCatalog(catalog([{ ...region, pmtilesUrl: './offline-maps/metro-manila.pmtiles' }]))).toThrow(/philippines\.pmtiles/);
     expect(() => parseMapCatalog(catalog([{ ...region, sizeBytes: 0 }]))).toThrow(/size/);
+    expect(parseMapCatalog(catalog([{ ...region, sizeBytes: 256 * 1024 ** 2 }])).regions[0].sizeBytes).toBe(256 * 1024 ** 2);
+    expect(() => parseMapCatalog(catalog([{ ...region, sizeBytes: 256 * 1024 ** 2 + 1 }]))).toThrow(/256 MiB/);
+  });
+
+  it('accepts regional Hub catalogs without applying country-wide coverage requirements', () => {
+    for (const id of ['luzon', 'visayas', 'mindanao', 'metro-manila']) {
+      expect(parseMapCatalog(catalog([{ ...region, id, pmtilesUrl: `./maps/${id}.pmtiles`, bounds: [120, 14, 122, 16], center: [121, 15], revision: 'fixture' }])).regions[0].id).toBe(id);
+    }
+    expect(() => parseMapCatalog(catalog([{ ...region, id: 'luzon', pmtilesUrl: './maps/luzon.pmtiles', sizeBytes: 128 * 1024 ** 2 + 1 }]))).toThrow(/128 MiB/);
+  });
+
+  it('requires the revision to match the archive checksum', () => {
+    expect(() => parseMapCatalog(catalog([{ ...region, revision: 'geofabrik-old' }]))).toThrow(/revision/);
   });
 
   it('rejects duplicate region IDs', () => {
@@ -48,7 +62,7 @@ describe('offline map catalog', () => {
   it('resolves legacy and Hub URLs against the app base, including subpaths', () => {
     expect(resolveMapAssetUrl('./maps/luzon.pmtiles', 'https://device.test/app/')).toBe('https://device.test/app/maps/luzon.pmtiles');
     expect(resolveMapAssetUrl('/offline-maps/metro-manila.pmtiles', 'https://device.test/app/')).toBe('https://device.test/app/offline-maps/metro-manila.pmtiles');
-    expect(parseMapCatalog(catalog([{ ...region, pmtilesUrl: './maps/luzon.pmtiles' }])).regions[0].pmtilesUrl).toBe('./maps/luzon.pmtiles');
+    expect(parseMapCatalog(catalog([{ ...region, id: 'luzon', pmtilesUrl: './maps/luzon.pmtiles' }])).regions[0].pmtilesUrl).toBe('./maps/luzon.pmtiles');
   });
 
   it('handles an absent catalog without claiming maps are available', async () => {
@@ -68,21 +82,23 @@ describe('offline map catalog', () => {
 
 describe('offline map region coverage', () => {
   it('includes edge coordinates and excludes points outside the bounds', () => {
-    expect(regionContains(region, [120.85, 14.35])).toBe(true);
-    expect(regionContains(region, [121.15, 14.8])).toBe(true);
-    expect(regionContains(region, [121.151, 14.6])).toBe(false);
+    expect(regionContains(region, [116.9, 4.5])).toBe(true);
+    expect(regionContains(region, [126.7, 21.2])).toBe(true);
+    expect(regionContains(region, [127.001, 13])).toBe(false);
   });
 });
 
 describe('offline map style', () => {
   it('uses only the downloaded archive and bundled fonts and sprites', () => {
-    const style = createOfflineMapStyle('pmtiles://metro-manila-2026-10.pmtiles', 'dark');
+    const style = createOfflineMapStyle('pmtiles://philippines-2026-10.pmtiles', 'dark', 'http://localhost:5173/');
     expect(style.glyphs).toMatch(/^(?:\.\/|\/)?map-assets\/fonts\//);
-    expect(style.sprite).toMatch(/^(?:\.\/|\/)?map-assets\/sprites\/v4\/dark$/);
+    expect(style.sprite).toBe('http://localhost:5173/map-assets/sprites/v4/dark');
     expect(style.sources.collapseai).toMatchObject({
       type: 'vector',
-      url: 'pmtiles://metro-manila-2026-10.pmtiles',
+      url: 'pmtiles://philippines-2026-10.pmtiles',
     });
-    expect(JSON.stringify(style)).not.toMatch(/https?:\/\/(?!www\.openstreetmap\.org)/);
+    expect(JSON.stringify(style.layers)).toContain('"townhall","townspot"');
+    expect(JSON.stringify(style)).not.toMatch(/https?:\/\/(?!(?:localhost:5173\/|www\.openstreetmap\.org|esa-worldcover\.org|github\.com\/protomaps\/basemaps))/);
+    expect(JSON.stringify(style.sources.collapseai)).toContain('ESA WorldCover');
   });
 });

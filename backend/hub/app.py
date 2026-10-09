@@ -14,7 +14,7 @@ from . import __version__
 from .config import Settings
 from .file_server import resource_path, serve_file
 from .llama_proxy import chat_proxy, llama_health
-from .maps import MapDiscovery, sha256_file
+from .maps import MapDiscovery, sha256_file, map_archive_limit
 
 
 def read_manifest(settings):
@@ -157,12 +157,12 @@ def create_app(settings=None, transport=None):
         from datetime import datetime, timezone
         regions = []
         for item in discovery.discover(hashes=True):
-            if not item["available"] or item["size"] > 128 * 1024 * 1024:
+            if not item["available"] or item["size"] > map_archive_limit(item["id"]):
                 continue
             updated = datetime.fromtimestamp((settings.map_dir / item["filename"]).stat().st_mtime, timezone.utc).isoformat()
             regions.append({"id": item["id"], "name": item["name"], "province": item["name"],
                             "pmtilesUrl": f"./maps/{item['filename']}", "sizeBytes": item["size"], "sha256": item["sha256"],
-                            "bounds": item["bounds"], "center": item["center"], "revision": item["sha256"][:16],
+                            "bounds": item["bounds"], "center": item["center"], "revision": f"sha256-{item['sha256']}" if item["id"] == "philippines" else item["sha256"][:16],
                             "updatedAt": updated, "tileSchema": "protomaps-basemaps"})
         return {"version": 1, "updatedAt": max((r["updatedAt"] for r in regions), default="1970-01-01T00:00:00Z"),
                 "attribution": "© OpenStreetMap contributors", "regions": regions}

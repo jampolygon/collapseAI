@@ -172,12 +172,21 @@ export default function OfflineMapPage({ online, theme }: Props) {
   const activeRegion = selectedDownloaded;
   const matchingPublished = location ? catalog?.regions.find(region => regionContains(region, location)) : undefined;
 
+  const selectMapLocation = useCallback((point: MapCenter) => {
+    if (!activeRegion || !regionContains(activeRegion, point)) {
+      setLocationState({ kind: 'error', message: 'That point is outside the selected downloaded map coverage. Choose a point within its bounds.' });
+      return;
+    }
+    setLocation(point);
+    setLocationState({ kind: 'ready', message: `Map location selected: ${point[1].toFixed(4)}, ${point[0].toFixed(4)}.` });
+  }, [activeRegion]);
+
   return (
     <div className="page-content map-page">
       <header className="page-intro">
         <span className="eyebrow">Map / Offline maps</span>
         <h2>Maps that stay with you.</h2>
-        <p>Download a prepared region before you need it. Map files and your location stay on this device.</p>
+        <p>Download a prepared region before you need it. Use GPS or tap the map to choose a location; map files and location stay on this device.</p>
       </header>
 
       <section className="map-controls" aria-label="Map options">
@@ -229,7 +238,7 @@ export default function OfflineMapPage({ online, theme }: Props) {
               <button className="danger map-delete" onClick={() => void removeMap(activeRegion)} aria-label={`Delete ${activeRegion.name} map`}><Icon name="trash" size={18} />Delete map</button>
             </div>
           </div>
-          <OfflineMapCanvas region={activeRegion} theme={theme} location={location} />
+          <OfflineMapCanvas region={activeRegion} theme={theme} location={location} onLocationSelect={selectMapLocation} />
           {busy && progress && (
             <div className="map-download-progress">
               <progress aria-label="Map update progress" max={progress.totalBytes} value={progress.receivedBytes} />

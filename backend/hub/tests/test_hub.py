@@ -78,6 +78,17 @@ class HubTests(unittest.TestCase):
         self.assertEqual(item["sizeBytes"], len(self.map))
         self.assertEqual(self.client.get("/offline-maps/luzon.pmtiles").content, self.map)
 
+    def test_country_archive_integrates_with_regional_discovery_and_revision(self):
+        from backend.hub.maps import BASEMAP_LAYERS
+        path = self.settings.map_dir / "philippines.pmtiles"
+        path.write_bytes(synthetic_archive(sorted(BASEMAP_LAYERS)))
+        info = self.client.get("/api/info").json()
+        self.assertEqual([entry["id"] for entry in info["maps"]], ["luzon", "visayas", "mindanao", "philippines"])
+        country = self.client.get("/offline-maps/regions.json").json()["regions"][-1]
+        self.assertEqual(country["revision"], "sha256-" + hashlib.sha256(path.read_bytes()).hexdigest())
+        path.write_bytes(self.map)  # Structurally readable, but not the country schema.
+        self.assertFalse(self.client.get("/api/info").json()["maps"][-1]["available"])
+
     def test_no_resource_directories_or_manifest(self):
         settings = replace(self.settings, manifest=self.settings.manifest.parent / "absent.json",
                            model_dir=self.settings.model_dir / "absent", map_dir=self.settings.map_dir / "absent")

@@ -284,7 +284,7 @@ strong, b { font-weight: 600; }
 .map-region-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; }
 .map-delete { flex-shrink: 0; }
 .offline-map-frame { position: relative; height: min(60vh, 620px); min-height: 340px; overflow: hidden; border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface); }
-.offline-map-canvas { position: absolute; inset: 0; }
+.offline-map-frame > .offline-map-canvas { position: absolute; inset: 0; }
 .offline-map-frame .maplibregl-ctrl-attrib { max-width: calc(100vw - 48px); font-size: 10px; }
 .offline-map-frame .maplibregl-ctrl-group { box-shadow: 0 1px 4px #0002; }
 .map-overlay { position: absolute; inset: 0; z-index: 2; display: grid; place-items: center; padding: 20px; background: color-mix(in srgb, var(--bg) 84%, transparent); color: var(--text); font-size: 13px; pointer-events: none; }

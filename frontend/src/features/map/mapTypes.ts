@@ -1,5 +1,6 @@
 export type MapBounds = [west: number, south: number, east: number, north: number];
 export type MapCenter = [longitude: number, latitude: number];
+export const PHILIPPINES_COVERAGE_BOUNDS: MapBounds = [116.9, 4.5, 126.7, 21.2];
 
 export interface MapRegion {
   id: string;
@@ -59,4 +60,8 @@ export interface EmergencyPoi {
   lastVerifiedAt: string;
 }
 
-export const MAX_MAP_ARCHIVE_BYTES = 128 * 1024 * 1024;
+// IndexedDB still holds a whole Blob. Keep regional downloads at their existing
+// cap; bounded incremental hashing permits the larger country extract safely.
+export const MAX_MAP_ARCHIVE_BYTES = 256 * 1024 * 1024;
+export const MAX_REGIONAL_MAP_ARCHIVE_BYTES = 128 * 1024 * 1024;
+export const mapArchiveLimit = (id: string) => id === 'philippines' ? MAX_MAP_ARCHIVE_BYTES : MAX_REGIONAL_MAP_ARCHIVE_BYTES;

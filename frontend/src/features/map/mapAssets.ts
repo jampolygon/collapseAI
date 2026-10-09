@@ -3,6 +3,7 @@ import workerUrl from 'maplibre-gl/dist/maplibre-gl-worker.mjs?worker&url';
 export function offlineMapAssetUrls(base = new URL(import.meta.env.BASE_URL, document.baseURI).href): string[] {
   const paths = ['Noto Sans Regular', 'Noto Sans Medium', 'Noto Sans Italic'].flatMap(font =>
     ['0-255', '256-511'].map(range => `map-assets/fonts/${encodeURIComponent(font)}/${range}.pbf`));
+  paths.push('map-assets/fonts/Noto%20Sans%20Regular/8192-8447.pbf');
   paths.push(...['light', 'dark'].flatMap(theme => ['', '@2x'].flatMap(scale =>
     ['json', 'png'].map(ext => `map-assets/sprites/v4/${theme}${scale}.${ext}`))));
   return [...paths.map(path => new URL(path, base).href), new URL(workerUrl, base).href];
