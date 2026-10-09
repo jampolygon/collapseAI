@@ -6,3 +6,5 @@ dist/
 .env*
 __pycache__/
 *.gguf
+backend/evals/results/*
+!backend/evals/results/.gitkeep

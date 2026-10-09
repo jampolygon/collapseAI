@@ -27,3 +27,17 @@ The shared format is defined by `Pack` and `Article` in
 `../frontend/src/lib/knowledge.ts`.
 
 A LAN hub is a future feature described in `../PLAN.md`; add it here if implemented.
+
+## Evaluation harness
+
+`evals/` benchmarks production-style prompts and approximate knowledge retrieval
+against a separately installed llama.cpp server. It uses Python's standard
+library and leaves the browser runtime and pack builder unchanged.
+
+```sh
+python backend/evals/run_eval.py --server http://127.0.0.1:8080
+```
+
+Run the command above from the repository root. See [evals/README.md](evals/README.md)
+for sequential GGUF model testing, benchmark editing, output reports, and the
+retrieval differences from MiniSearch.
