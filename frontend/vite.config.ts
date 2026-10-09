@@ -97,7 +97,7 @@ function localMapAssetsPlugin(releaseSelected: boolean) {
 function appShellPrecachePlugin() {
   let outDir = '';
   const skip = (rel: string) =>
-    /^(packs|maps|offline-maps|models)\//.test(rel) || ['sw.js', 'precache.json', '_headers'].includes(rel) || rel.endsWith('.txt') || rel.endsWith('.map');
+    /^(packs|maps|offline-maps|models)\//.test(rel) || /\.(?:pmtiles|gguf)$/i.test(rel) || ['sw.js', 'precache.json', '_headers'].includes(rel) || rel.endsWith('.txt') || rel.endsWith('.map');
   const walk = async (dir: string, base = ''): Promise<{ path: string; size: number }[]> => {
     const out: { path: string; size: number }[] = [];
     for (const entry of await readdir(dir, { withFileTypes: true })) {
@@ -115,12 +115,16 @@ function appShellPrecachePlugin() {
     },
     async closeBundle() {
       const files = (await walk(outDir)).sort((a, b) => a.path.localeCompare(b.path));
-      const version = createHash('sha256').update(JSON.stringify(files)).digest('hex').slice(0, 12);
+      const swPath = path.join(outDir, 'sw.js');
+      const sw = await readFile(swPath, 'utf8');
+      // A cache identity must also change for worker/static-file changes with
+      // unchanged filenames and sizes, or an update could reuse an active cache.
+      const hash = createHash('sha256').update(JSON.stringify(files)).update(sw);
+      for (const file of files) hash.update(await readFile(path.join(outDir, file.path)));
+      const version = hash.digest('hex').slice(0, 12);
       const urls = ['./', ...files.map((f) => `./${f.path.split('/').map(encodeURIComponent).join('/')}`)];
       const bytes = files.reduce((n, f) => n + f.size, 0);
       await writeFile(path.join(outDir, 'precache.json'), JSON.stringify({ version, bytes, urls }, null, 1));
-      const swPath = path.join(outDir, 'sw.js');
-      const sw = await readFile(swPath, 'utf8');
       await writeFile(swPath, `const SHELL_VERSION = '${version}';\n${sw}`);
       console.log(`app shell: ${urls.length} files, ${(bytes / 1e6).toFixed(1)} MB, version ${version}`);
     },
