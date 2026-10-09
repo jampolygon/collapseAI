@@ -358,3 +358,20 @@ strong, b { font-weight: 600; }
 }
 @media (max-width: 380px) { .header-statuses .system-status:first-child { display: none; } .page-content { padding-inline: 18px; } .pack-icon { display: none; } }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; } }
+
+/* Compass */
+.compass { width: min(72vw, 280px); height: auto; display: block; margin: 8px auto; }
+.compass .compass-rose { transform-origin: 100px 100px; transition: transform 150ms linear; }
+.compass .dial { fill: var(--raised); stroke: var(--border-strong); stroke-width: 1.5; }
+.compass .tick { stroke: var(--muted); stroke-width: 1.2; }
+.compass .cardinal { fill: var(--text); font-size: 15px; font-weight: 600; text-anchor: middle; }
+.compass .cardinal.north { font-weight: 800; text-decoration: underline; }
+.compass .lubber, .compass .target-arrow { fill: var(--contrast); }
+.compass .sun-dot { fill: none; stroke: var(--text); stroke-width: 2; }
+.heading-readout { text-align: center; font-size: 22px; margin-bottom: 8px; }
+.field-label { display: flex; flex-direction: column; gap: 6px; font-size: 13px; color: var(--muted); }
+.save-place { margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--border); display: flex; flex-direction: column; gap: 8px; }
+.place-list { list-style: none; padding: 0; margin: 12px 0 0; }
+.place-list li { display: flex; align-items: center; gap: 10px; padding: 10px 0; border-bottom: 1px solid var(--border); }
+.place-list li span:first-child { flex: 1; }
+@media (prefers-reduced-motion: reduce) { .compass .compass-rose { transition: none; } }

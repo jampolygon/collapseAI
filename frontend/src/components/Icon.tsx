@@ -33,6 +33,9 @@ const paths = {
   trash: 'M3 6h18M9 6V3h6v3M5 6l1 15h12l1-15M10 10v7m4-7v7',
   file: 'M14 2H5v20h14V7l-5-5Zm0 0v5h5M8 12h8m-8 4h8',
   compass: 'M22 12a10 10 0 1 1-20 0 10 10 0 0 1 20 0Zm-7-3-2 4-4 2 2-4 4-2Z',
+  needle: 'M12 2 16 12 12 22 8 12Z M12 2v10',
+  camera: 'M4 7h3l2-3h6l2 3h3a1 1 0 0 1 1 1v11a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V8a1 1 0 0 1 1-1Zm8 10a4 4 0 1 0 0-8 4 4 0 0 0 0 8Z',
+  pin: 'M12 22s7-7 7-12a7 7 0 1 0-14 0c0 5 7 12 7 12Zm0-9a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z',
 };
 export type IconName = keyof typeof paths;
 
