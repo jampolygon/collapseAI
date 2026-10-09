@@ -20,6 +20,11 @@ interface Turn {
   error?: string;
 }
 
+// The conversation lives outside the component, so switching to Library and back keeps it.
+let savedTurns: Turn[] = [];
+const finishRunning = (t: Turn): Turn =>
+  t.phase === 'reading' || t.phase === 'answering' ? { ...t, phase: 'done', a: t.a ? `${t.a} …(stopped)` : t.a } : t;
+
 const EXAMPLES = [
   'How do I stop heavy bleeding?',
   'How do I make water safe to drink?',
@@ -51,12 +56,20 @@ export default function Ask({ downloads, onModelChange, onGoPrepare }: Props) {
   const [notice, setNotice] = useState<string | null>(null);
   const [current, setCurrent] = useState(loadedModel()?.id ?? null);
   const [gpu, setGpu] = useState(gpuEnabled());
-  const [turns, setTurns] = useState<Turn[]>([]);
+  const [turns, setTurns] = useState<Turn[]>(savedTurns);
   const [input, setInput] = useState('');
   const [busy, setBusy] = useState(false);
   const abortRef = useRef<AbortController | null>(null);
+  const turnsRef = useRef(turns);
+  turnsRef.current = turns;
   const endRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
+
+  // Leaving the screen stops any answer that is still being written, so it cannot run in the background.
+  useEffect(() => () => {
+    abortRef.current?.abort();
+    savedTurns = turnsRef.current.map(finishRunning);
+  }, []);
 
   useEffect(() => {
     if (!selected && available[0]) setSelected(available[0].id);
@@ -145,7 +158,7 @@ export default function Ask({ downloads, onModelChange, onGoPrepare }: Props) {
         ) : (
           <div className="loader">
             <Icon name="cpu" size={18} />
-            <select aria-label="Downloaded AI model" value={selected} onChange={(e) => setSelected(e.target.value)} disabled={loading}>
+            <select aria-label="Downloaded AI model" value={selected} onChange={(e) => setSelected(e.target.value)} disabled={loading || busy}>
               {available.map((m) => (
                 <option key={m.id} value={m.id}>
                   {m.name} ({m.family})
@@ -155,7 +168,7 @@ export default function Ask({ downloads, onModelChange, onGoPrepare }: Props) {
             {current === selected ? (
               <Status label="Model" value="Loaded" state="ready" />
             ) : (
-              <button className="primary" onClick={doLoad} disabled={loading}>
+              <button className="primary" onClick={doLoad} disabled={loading || busy}>
                 {loading ? <><span className="loading-dot" />Loading model…</> : 'Start AI'}
               </button>
             )}
@@ -166,6 +179,7 @@ export default function Ask({ downloads, onModelChange, onGoPrepare }: Props) {
             <input
               type="checkbox"
               checked={gpu}
+              disabled={loading || busy}
               onChange={async (e) => {
                 setGpuEnabled(e.target.checked);
                 setGpu(e.target.checked);
