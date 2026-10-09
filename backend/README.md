@@ -21,12 +21,17 @@ python scripts/build_packs.py
 ```
 
 Edit `content/*.md` using the existing front matter and article headings.
-Generated packs are written to `../frontend/public/packs/*.json` and should be
-committed with the source content. Their URLs remain `packs/<id>.json` in the app.
+Generated packs are written to `../frontend/public/packs/*.json`, with exact sizes
+and hashes in `../frontend/public/manifest.json`. Commit both with the source content.
+Their URLs remain `packs/<id>.json` in the app; the new manifest is not consumed yet.
 The shared format is defined by `Pack` and `Article` in
 `../frontend/src/lib/knowledge.ts`.
 
 A LAN hub is a future feature described in `../PLAN.md`; add it here if implemented.
+
+Pack Builder v2 validates required fields, duplicate IDs, source syntax, and
+configurable article/passage limits. See [scripts/README.md](scripts/README.md)
+for the manifest schema, determinism, configuration, and unit-test commands.
 
 ## Evaluation harness
 

@@ -1,0 +1,91 @@
+{
+  "schema_version": 1,
+  "builder_version": 2,
+  "packs": [
+    {
+      "id": "disasters",
+      "path": "/packs/disasters.json",
+      "size": 5418,
+      "sha256": "378d29932b5cf04d85ab4adf405e0fd71fc153a080a570fca7592ec92816870c",
+      "articles": 5,
+      "version": 1
+    },
+    {
+      "id": "engineering",
+      "path": "/packs/engineering.json",
+      "size": 3442,
+      "sha256": "cdc823946c58de4e2ea9ae1eb51355952e75d6f2096adf9f02e2302369cd01c8",
+      "articles": 4,
+      "version": 1
+    },
+    {
+      "id": "first-aid",
+      "path": "/packs/first-aid.json",
+      "size": 9886,
+      "sha256": "6cc926ac5845cd6198facf564a4c0c7ff11d58e972c012ab2943689450ea9f4e",
+      "articles": 10,
+      "version": 1
+    },
+    {
+      "id": "food",
+      "path": "/packs/food.json",
+      "size": 3723,
+      "sha256": "35b796156c3e0cd9892a5ea97c0d5d978ced6867d6ad26fc66cc5720838073ca",
+      "articles": 5,
+      "version": 1
+    },
+    {
+      "id": "medicine",
+      "path": "/packs/medicine.json",
+      "size": 4984,
+      "sha256": "d8589be9a2f20a7d712518f4db4638a3527e7507cd1a68573b4cfec72f9ef151",
+      "articles": 6,
+      "version": 1
+    },
+    {
+      "id": "survival",
+      "path": "/packs/survival.json",
+      "size": 5623,
+      "sha256": "cf3a68be7ecb92e145993702570f5f1b0fc816da15a0659ac581e6a91e39580e",
+      "articles": 6,
+      "version": 1
+    }
+  ],
+  "models": [
+    {
+      "id": "lfm25-350m",
+      "name": "Ember",
+      "url": "https://huggingface.co/LiquidAI/LFM2.5-350M-GGUF/resolve/main/LFM2.5-350M-Q4_K_M.gguf",
+      "size": null,
+      "sha256": null
+    },
+    {
+      "id": "qwen35-0.8b",
+      "name": "Spark",
+      "url": "https://huggingface.co/unsloth/Qwen3.5-0.8B-GGUF/resolve/main/Qwen3.5-0.8B-Q4_K_M.gguf",
+      "size": null,
+      "sha256": null
+    },
+    {
+      "id": "lfm25-1.2b",
+      "name": "Torch",
+      "url": "https://huggingface.co/LiquidAI/LFM2.5-1.2B-Instruct-GGUF/resolve/main/LFM2.5-1.2B-Instruct-Q4_K_M.gguf",
+      "size": null,
+      "sha256": null
+    },
+    {
+      "id": "qwen35-2b",
+      "name": "Lantern",
+      "url": "https://huggingface.co/unsloth/Qwen3.5-2B-GGUF/resolve/main/Qwen3.5-2B-Q4_K_M.gguf",
+      "size": null,
+      "sha256": null
+    },
+    {
+      "id": "llama32-3b",
+      "name": "Beacon",
+      "url": "https://huggingface.co/bartowski/Llama-3.2-3B-Instruct-GGUF/resolve/main/Llama-3.2-3B-Instruct-Q4_K_M.gguf",
+      "size": null,
+      "sha256": null
+    }
+  ]
+}
