@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import wasmUrl from '@wllama/wllama/esm/wasm/wllama.wasm?url';
 import type { DLItem } from '../lib/downloads';
+import { APP_RUNTIME_CACHE, appShellCacheName } from '../lib/appCache';
 
 export type CacheState = 'checking' | 'cached' | 'missing' | 'partial' | 'unavailable' | 'development' | 'error';
 export interface SystemSnapshot {
@@ -35,11 +36,13 @@ export function useSystemSnapshot(downloads: DLItem[]): SystemSnapshot {
         appCache = engineCache = 'unavailable';
       } else {
         try {
-          if (await caches.has('collapseai-app')) {
+          const shellName = await appShellCacheName();
+          if (shellName) {
             const required = [new URL('./', document.baseURI).href, ...Array.from(document.querySelectorAll<HTMLScriptElement | HTMLLinkElement>('script[src], link[rel="stylesheet"], link[rel="icon"], link[rel="manifest"]')).map(el => el instanceof HTMLScriptElement ? el.src : el.href)];
-            const hits = await Promise.all(required.map(url => caches.match(url, { cacheName: 'collapseai-app', ignoreVary: true })));
+            const match = async (url: string) => (await caches.match(url, { cacheName: shellName, ignoreVary: true })) || caches.match(url, { cacheName: APP_RUNTIME_CACHE, ignoreVary: true });
+            const hits = await Promise.all(required.map(match));
             appCache = hits.every(Boolean) ? 'cached' : hits.some(Boolean) ? 'partial' : 'missing';
-            engineCache = await caches.match(new URL(wasmUrl, document.baseURI).href, { cacheName: 'collapseai-app', ignoreVary: true }) ? 'cached' : 'missing';
+            engineCache = await match(new URL(wasmUrl, document.baseURI).href) ? 'cached' : 'missing';
           }
         } catch (error) {
           appCache = engineCache = 'error';

@@ -1,10 +1,7 @@
 import { useEffect, useState } from 'react';
-import * as SunCalcNS from 'suncalc';
+import { getPosition, getTimes } from 'suncalc';
 import { Icon } from '../components/Icon';
 import { PLACE_KINDS, bearing, cardinal, distance, fmtDistance, loadPlaces, savePlaces, setTargetId, useGps, usePlaces, type Place } from '../lib/geo';
-
-// suncalc is CommonJS: depending on the bundler the API is on the namespace or on .default
-const SunCalc: typeof SunCalcNS = (SunCalcNS as any).default ?? SunCalcNS;
 
 /** Phone compass (magnetometer) + direction to a saved place + sun direction as a backup. All offline. */
 export default function Compass() {
@@ -176,8 +173,8 @@ function turnHint(diff: number) {
 
 function sunInfo(lat: number, lon: number) {
   const now = new Date();
-  const pos = SunCalc.getPosition(now, lat, lon);
-  const times = SunCalc.getTimes(now, lat, lon);
+  const pos = getPosition(now, lat, lon);
+  const times = getTimes(now, lat, lon);
   const fmt = (d: Date | null) => (d ? d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '–');
   const left = times.sunset ? times.sunset.getTime() - now.getTime() : 0;
   return {

@@ -1,4 +1,5 @@
 import workerUrl from 'maplibre-gl/dist/maplibre-gl-worker.mjs?worker&url';
+import { APP_RUNTIME_CACHE, appShellCacheName } from '../../lib/appCache';
 
 export function offlineMapAssetUrls(base = new URL(import.meta.env.BASE_URL, document.baseURI).href): string[] {
   const paths = ['Noto Sans Regular', 'Noto Sans Medium', 'Noto Sans Italic'].flatMap(font =>
@@ -16,13 +17,16 @@ export async function prepareOfflineMapAssets(): Promise<void> {
     if (!navigator.serviceWorker?.controller || !('caches' in window)) {
       throw new Error('Offline app caching is not ready. Reload CollapseAI once and retry the map download.');
     }
-    const cache = await caches.open('collapseai-app');
+    const shellName = await appShellCacheName();
+    if (!shellName) throw new Error('Offline app caching is not ready. Reload CollapseAI and retry.');
+    const shell = await caches.open(shellName);
+    const cache = await caches.open(APP_RUNTIME_CACHE);
     const loadedCode = performance.getEntriesByType('resource').map(entry => entry.name).filter(url => {
       const asset = new URL(url);
       return asset.origin === location.origin && /\.(?:js|css)$/.test(asset.pathname);
     });
     for (const url of new Set([...offlineMapAssetUrls(), ...loadedCode])) {
-      if (!await cache.match(url, { ignoreVary: true })) await cache.add(url);
+      if (!await shell.match(url, { ignoreVary: true }) && !await cache.match(url, { ignoreVary: true })) await cache.add(url);
     }
   }
 }
