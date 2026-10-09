@@ -28,13 +28,27 @@ fs.writeFileSync(entryFile, `
   export { default as Tools } from '../src/views/Tools';
   export { default as App } from '../src/App';
   export { default as Survive } from '../src/views/Survive';
+  export { default as Compass } from '../src/views/Compass';
   export { Skeleton } from '../src/components/Skeleton';
 `);
 const result = await build({ root, configFile: false, plugins: [react()], logLevel: 'silent', build: { ssr: entryFile, write: false, minify: false } });
 fs.writeFileSync(compiledFile, result.output.find(item => item.type === 'chunk' && item.isEntry).code);
-const { RichText, Ask, Prepare, Library, Tools, App, Survive, Skeleton } = await import(pathToFileURL(compiledFile).href);
+const { RichText, Ask, Prepare, Library, Tools, App, Survive, Compass, Skeleton } = await import(pathToFileURL(compiledFile).href);
 const render = (component, props) => renderToStaticMarkup(React.createElement(component, props));
 const noop = () => {};
+
+test('Compass loads SunCalc named exports and renders solar data', () => {
+  stored.set('cai.lastfix', JSON.stringify({ lat: 14.6, lon: 120.98, accuracy: 10, time: Date.now() }));
+  try {
+    const html = render(Compass);
+    assert.match(html, /Find your way/);
+    assert.match(html, /Sunrise/);
+    assert.match(html, /Sunset/);
+    assert.doesNotMatch(html, /NaN|Invalid Date|Needs your location/);
+  } finally {
+    stored.delete('cai.lastfix');
+  }
+});
 
 test('startup defaults to light, migrates system preference, and preserves explicit dark', () => {
   const script = read('index.html').match(/<script>([\s\S]*?)<\/script>/)[1];
