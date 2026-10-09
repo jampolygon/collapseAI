@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { MODELS, modelKey } from '../lib/catalog';
 import { getFile, type DLItem } from '../lib/downloads';
 import { gpuEnabled, loadModel, loadedModel, setGpuEnabled, unload, type ChatStats } from '../lib/llm';
-import { ask } from '../lib/ask';
+import { ask, type HistoryTurn } from '../lib/ask';
 import type { Passage } from '../lib/knowledge';
 import { Icon } from '../components/Icon';
 import { Status } from '../components/Status';
@@ -15,6 +15,7 @@ interface Turn {
   sources: Passage[];
   stats?: ChatStats | null;
   phase: 'reading' | 'answering' | 'done' | 'error';
+  kind?: 'answer' | 'smalltalk' | 'no-info';
   progress?: number;
   error?: string;
 }
@@ -106,6 +107,10 @@ export default function Ask({ downloads, onModelChange, onGoPrepare }: Props) {
     setInput('');
     setBusy(true);
     const i = turns.length;
+    // the last finished exchanges, so "what about kids?" can be understood
+    const history: HistoryTurn[] = turns
+      .filter((t) => t.phase === 'done' && t.a)
+      .map((t) => ({ q: t.q, a: t.a, hadSources: t.sources.length > 0 && t.kind === 'answer' }));
     setTurns((ts) => [...ts, { q, a: '', sources: [], phase: 'reading' }]);
     const ctrl = new AbortController();
     abortRef.current = ctrl;
@@ -113,6 +118,7 @@ export default function Ask({ downloads, onModelChange, onGoPrepare }: Props) {
     try {
       const res = await ask(q, {
         signal: ctrl.signal,
+        history,
         onSources: (sources) => update(i, { sources }),
         onPrompt: (progress) => update(i, { progress }),
         onToken: (t) => {
@@ -120,7 +126,7 @@ export default function Ask({ downloads, onModelChange, onGoPrepare }: Props) {
           update(i, { a: acc, phase: 'answering' });
         },
       });
-      update(i, { phase: 'done', stats: res.stats });
+      update(i, { phase: 'done', stats: res.stats, kind: res.kind });
     } catch (e: any) {
       if (ctrl.signal.aborted) update(i, { phase: 'done', a: acc + ' …(stopped)' });
       else update(i, { phase: 'error', error: String(e?.message ?? e) });
@@ -205,7 +211,7 @@ export default function Ask({ downloads, onModelChange, onGoPrepare }: Props) {
               )}
               {t.phase === 'answering' && busy && i === turns.length - 1 && <p className="generation-state muted small" role="status"><span className="loading-dot" />Generating on this device</p>}
               {t.a && <div className="answer"><RichText text={t.a} /></div>}
-              {!current && t.phase !== 'error' && (
+              {!current && t.phase !== 'error' && t.kind === 'answer' && t.sources.length > 0 && (
                 <p className="muted small">AI not started. Here is what the offline library says:</p>
               )}
               {t.phase === 'error' && <p className="error" role="alert"><Icon name="info" size={16} />{t.error}</p>}

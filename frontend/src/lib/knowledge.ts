@@ -99,6 +99,31 @@ export function expandQuery(q: string): string {
     .join(' ');
 }
 
+// Filler words that only add noise to a search ("do", "about", "you" match half the library).
+const STOP = new Set(
+  ('a an the and or but if of to in on at by for with from about as is are was were be been am i me my we our you your ' +
+    'he she it its they them their this that these those what which who whom how when where why do does did doing done ' +
+    'can could should would will shall may might must have has had having get got some someone somebody something any ' +
+    'there here very just so not no yes please help need want know tell make po ho opo naman lang din rin kasi').split(' '),
+);
+
+/** Very small plural stemmer so "wounds"/"fires" match "wound"/"fire". */
+export function stem(word: string): string {
+  const w = word.toLowerCase();
+  if (w.length <= 3 || /(ss|us|is)$/.test(w)) return w;
+  if (/(sses|xes|zes|ches|shes)$/.test(w)) return w.slice(0, -2);
+  if (w.endsWith('ies') && w.length > 4) return `${w.slice(0, -3)}y`;
+  if (w.endsWith('s')) return w.slice(0, -1);
+  return w;
+}
+
+/** Search terms for a question: Taglish expanded, filler words dropped. */
+export function searchTerms(q: string): string[] {
+  return expandQuery(q)
+    .split(' ')
+    .filter((w) => w && !STOP.has(w));
+}
+
 let index: MiniSearch<Passage> | null = null;
 let passages = new Map<string, Passage>();
 let loaded: Pack[] = [];
@@ -159,9 +184,15 @@ export async function loadKnowledge(): Promise<Pack[]> {
  */
 export function indexPacks(packs: Pack[]): { passages: number; articles: number } {
   const ms = new MiniSearch<Passage>({
-    fields: ['title', 'category', 'text'],
+    fields: ['title', 'category', 'text', 'tags'],
     storeFields: ['id'],
-    searchOptions: { boost: { title: 3, category: 1.5 }, prefix: true, fuzzy: 0.15 },
+    processTerm: stem,
+    searchOptions: {
+      boost: { title: 3, category: 1.5, tags: 2 },
+      // Only longer words get prefix/typo matching, so "po" never matches "power" and "flood" never matches "food".
+      prefix: (term: string) => term.length >= 5,
+      fuzzy: (term: string) => (term.length >= 6 ? 0.2 : false),
+    },
   });
   passages = new Map();
   const all = packs.flatMap((pk) => pk.articles.flatMap((a) => chunk(pk, a)));
@@ -174,12 +205,23 @@ export function indexPacks(packs: Pack[]): { passages: number; articles: number 
 
 export const loadedPacks = () => loaded;
 
+/** A hit must score at least this share of the best hit, or it is treated as unrelated. */
+const RELATIVE_CUTOFF = 0.35;
+/**
+ * ...and the best hit must reach a minimum score (one stray word is not an answer). Scores grow with
+ * the library size, so the floor does too: about 10 for the 61 passages of the default packs.
+ */
+const minScore = () => (passages.size < 20 ? 0 : 2.4 * Math.log(passages.size)); // tiny test libraries have tiny scores
+
 export function search(query: string, k = 3): Passage[] {
   if (!index) return [];
-  const q = expandQuery(query);
-  if (!q) return [];
-  return index
-    .search(q, { combineWith: 'OR' })
+  const terms = searchTerms(query);
+  if (!terms.length) return [];
+  const results = index.search(terms.join(' '), { combineWith: 'OR' });
+  if (!results.length || results[0].score < minScore()) return [];
+  const floor = results[0].score * RELATIVE_CUTOFF;
+  return results
+    .filter((r) => r.score >= floor)
     .slice(0, k)
     .map((r) => passages.get(r.id as string)!)
     .filter(Boolean);
