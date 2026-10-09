@@ -106,8 +106,9 @@ export default defineConfig(({ mode }) => {
   return {
     plugins: [react(), ...(mode === 'phone' ? [basicSsl()] : []), ...(!hub ? [localMapAssetsPlugin(Boolean(release))] : [])],
     base: './',
-    server: { headers: isolation, host: true, proxy },
-    preview: { headers: isolation, host: true, proxy },
+    // .trycloudflare.com: temporary HTTPS demo links (cloudflared quick tunnel) for phone testing
+    server: { headers: isolation, host: true, proxy, allowedHosts: ['.trycloudflare.com'] },
+    preview: { headers: isolation, host: true, proxy, allowedHosts: ['.trycloudflare.com'] },
     optimizeDeps: { exclude: ['@wllama/wllama'] },
     build: { target: 'es2022', chunkSizeWarningLimit: 4000 },
   };

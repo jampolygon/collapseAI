@@ -425,3 +425,18 @@ strong, b { font-weight: 600; }
   .composer-hints { display: none; }
   .disclaimer { font-size: 11px; line-height: 1.4; padding: 4px 8px 0; }
 }
+
+/* Status labels: long on desktop, short on phones */
+.label-short { display: none; }
+@media (max-width: 760px) {
+  /* Phones: colored dots instead of text values. Green ready · amber pending · red problem. */
+  .header-statuses { gap: 12px; }
+  .header-statuses .system-status, .header-statuses .system-status:nth-child(2), .header-statuses .system-status:first-child { display: flex; align-items: center; gap: 5px; }
+  .header-statuses .status-value { display: none; }
+  .header-statuses .label-long { display: none; }
+  .header-statuses .label-short { display: inline; font-size: 12px; color: var(--muted); }
+  .header-statuses .status-dot { width: 10px; height: 10px; border: 0; border-radius: 50%; transform: none; animation: none; background: #d99a1f; }
+  .header-statuses .status-ready .status-dot { background: #1f9d55; }
+  .header-statuses .status-error .status-dot { background: #d93a3a; }
+  .header-statuses .status-busy .status-dot { background: #d99a1f; animation: loading 1.4s ease-in-out infinite; }
+}
