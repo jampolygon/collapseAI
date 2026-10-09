@@ -35,7 +35,7 @@
 ### P2: only if ahead of schedule
 13. **Hub mode** (Python FastAPI on a laptop: serves packs/models over LAN, runs a bigger model)
 14. **Photo understanding** (Qwen3.5 vision add-on: plant / wound / pill)
-15. **Offline map** (PMTiles Philippines + GPS + saved waypoints)
+15. **Offline map** (PMTiles, GPS, saved waypoints) — app flow and local storage are implemented; Metro Manila release data and verified POIs remain unpublished.
 16. **Voice input**, night (red) mode, Full Archive pack
 
 ### Not doing

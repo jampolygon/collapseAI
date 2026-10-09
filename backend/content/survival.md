@@ -2,6 +2,7 @@
 id: survival
 name: Survival Basics
 license: CC BY-SA 4.0, CollapseAI team. Based on public-domain survival manuals (US Army FM 21-76) and WHO water guidance.
+last_verified: 2026-10-09
 ---
 
 # Survival priorities (rule of threes)

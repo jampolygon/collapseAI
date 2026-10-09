@@ -3,12 +3,26 @@
  "name": "Disasters (Philippines)",
  "version": 1,
  "license": "CC BY-SA 4.0, CollapseAI team. Based on PAGASA, PHIVOLCS and NDRRMC public guidance.",
+ "updated": "2026-10-09",
  "articles": [
   {
    "id": "typhoon-before-during-and-after",
    "title": "Typhoon: before, during and after",
    "category": "Disasters",
    "source": "Based on PAGASA / NDRRMC public guidance",
+   "tags": [
+    "typhoon",
+    "bagyo",
+    "storm",
+    "wind signal",
+    "go-bag"
+   ],
+   "disaster_types": [
+    "typhoon",
+    "storm-surge",
+    "flood"
+   ],
+   "last_verified": "2026-10-09",
    "text": "PAGASA Tropical Cyclone Wind Signals:\n- Signal 1: strong winds (39–61 km/h) expected within 36 hours. Minimal to minor threat.\n- Signal 2: gale-force winds (62–88 km/h) within 24 hours. Minor to moderate threat.\n- Signal 3: storm-force winds (89–117 km/h) within 18 hours. Moderate to significant threat.\n- Signal 4: typhoon-force winds (118–184 km/h) within 12 hours. Significant to severe threat.\n- Signal 5: winds of 185 km/h or more within 12 hours. Extreme threat to life and property.\n\nBefore: charge phones and power banks, prepare a go-bag, store water and food for 3 days, secure loose objects and roofing, know your evacuation center. Evacuate early when told to, especially in coastal, low-lying or landslide-prone areas.\n\nStorm surge: sea water can rise several meters and flood far inland. If there is a storm surge warning for your coast, evacuate to higher ground.\n\nDuring: stay indoors away from windows. The calm \"eye\" is not the end; winds return from the other direction.\n\nAfter: watch for fallen power lines, damaged buildings, landslides and floodwater. Boil or disinfect drinking water."
   },
   {
@@ -16,6 +30,18 @@
    "title": "Flood safety",
    "category": "Disasters",
    "source": "Based on NDRRMC / WHO flood guidance",
+   "tags": [
+    "flood",
+    "baha",
+    "moving water",
+    "leptospirosis",
+    "evacuation"
+   ],
+   "disaster_types": [
+    "flood",
+    "typhoon"
+   ],
+   "last_verified": "2026-10-09",
    "text": "- Move to higher ground or an upper floor early. Do not wait.\n- Turn off electricity at the main switch if you can do it safely (dry hands, dry place).\n- Never walk, swim or drive through moving water. 15 cm of fast water can knock you down; 60 cm can carry away a car.\n- Stay away from electric lines and open manholes (often hidden under flood water).\n- Avoid wading in flood water. It carries leptospirosis (from rat urine), sewage and sharp debris. If you must, wear boots, and wash with soap and clean water afterwards. Cover wounds.\n- Do not eat food that touched flood water unless it is in sealed metal cans (wash and disinfect the can).\n- After flooding: clean and disinfect, watch for snakes, and see a health worker if you develop fever after wading (possible leptospirosis)."
   },
   {
@@ -23,6 +49,18 @@
    "title": "Earthquake: Duck, Cover and Hold",
    "category": "Disasters",
    "source": "Based on PHIVOLCS earthquake preparedness guidance",
+   "tags": [
+    "earthquake",
+    "lindol",
+    "duck cover hold",
+    "aftershock",
+    "tsunami"
+   ],
+   "disaster_types": [
+    "earthquake",
+    "tsunami"
+   ],
+   "last_verified": "2026-10-09",
    "text": "During shaking:\n- DUCK under a sturdy table, COVER your head and neck, and HOLD on until the shaking stops.\n- If there is no table, crouch next to an inside wall away from windows and cover your head.\n- If outside, move to an open area away from buildings, trees, poles and power lines.\n- If driving, stop in an open area and stay inside.\n- Do not run outside while the ground is shaking; falling debris is the main danger.\n\nAfter shaking:\n- Expect aftershocks. Leave damaged buildings carefully, using stairs not elevators.\n- Check for injuries and give first aid.\n- Check for gas leaks (smell). If you smell gas, do not use flames or switches; open windows and leave.\n- Listen to a battery radio for updates.\n\nTsunami: if you are near the coast and the shaking is strong or long, or the sea suddenly pulls back, move to high ground or far inland immediately. Do not wait for an official warning. Stay away until authorities say it is safe; several waves can come."
   },
   {
@@ -30,6 +68,18 @@
    "title": "Volcanic eruption and ashfall",
    "category": "Disasters",
    "source": "Based on PHIVOLCS volcanic hazard guidance",
+   "tags": [
+    "volcano",
+    "bulkan",
+    "ashfall",
+    "abo",
+    "lahar",
+    "mask"
+   ],
+   "disaster_types": [
+    "volcano"
+   ],
+   "last_verified": "2026-10-09",
    "text": "- Follow PHIVOLCS alert levels and evacuate immediately when ordered. Lahars (volcanic mudflows) can travel far down river valleys, especially during heavy rain.\n- Stay indoors during ashfall. Close windows and doors; seal gaps with damp towels.\n- Wear an N95 mask. If you have none, use a damp cloth over the nose and mouth.\n- Protect your eyes with glasses or goggles; do not wear contact lenses.\n- Cover water containers and wells. Do not drink water with ash in it.\n- Clear ash from roofs early. Wet ash is very heavy and can collapse roofs. Be careful of falls.\n- People with asthma or lung disease, children and the elderly should stay indoors."
   },
   {
@@ -37,6 +87,20 @@
    "title": "Go-bag and family plan",
    "category": "Disasters",
    "source": "Based on NDRRMC \"Go Bag\" guidance",
+   "tags": [
+    "go-bag",
+    "evacuation",
+    "family plan",
+    "emergency hotline",
+    "supplies"
+   ],
+   "disaster_types": [
+    "typhoon",
+    "flood",
+    "earthquake",
+    "volcano"
+   ],
+   "last_verified": "2026-10-09",
    "text": "Prepare a go-bag for each person, ready to grab in seconds:\n- Water (at least 4 liters per person per day for 3 days)\n- Ready-to-eat food for 3 days, can opener\n- Flashlight, extra batteries, power bank\n- First aid kit and personal medicines (with prescriptions)\n- Copies of IDs and important documents in a waterproof bag\n- Cash in small bills\n- Whistle, battery or crank radio\n- Extra clothes, raincoat, blanket\n- Face masks, soap, alcohol, sanitary pads, diapers if needed\n\nFamily plan:\n- Agree on a meeting place near home and one outside the neighborhood.\n- Know your barangay evacuation center and routes.\n- Write down important phone numbers on paper. Phones die.\n- Emergency hotline in the Philippines: 911."
   }
  ]

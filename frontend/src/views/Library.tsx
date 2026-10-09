@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { allArticles, search, type Pack } from '../lib/knowledge';
+import { search, type Pack } from '../lib/knowledge';
 import { Icon } from '../components/Icon';
 import { RichText } from '../components/RichText';
 
@@ -8,7 +8,7 @@ export default function Library({ packs }: { packs: Pack[] }) {
   const [openId, setOpenId] = useState<string | null>(null);
   const [packFilter, setPackFilter] = useState('all');
   const [categoryFilter, setCategoryFilter] = useState('all');
-  const articles = useMemo(() => allArticles(), [packs]);
+  const articles = useMemo(() => packs.flatMap(pack => pack.articles.map(article => ({ ...article, packId: pack.id }))), [packs]);
 
   const matched = useMemo(() => {
     if (!q.trim()) return articles;
@@ -47,7 +47,7 @@ export default function Library({ packs }: { packs: Pack[] }) {
           <div className="section-heading"><h3>{cat}</h3><span className="muted tiny mono">{list.length} article{list.length === 1 ? '' : 's'}</span></div>
           {list.map((a) => (
             <button key={`${a.packId}/${a.id}`} className="article-link" onClick={() => setOpenId(`${a.packId}/${a.id}`)}>
-              <Icon name="file" size={18} /><span className="article-list-title">{a.title}<small>{packs.find(pack => pack.id === a.packId)?.name}</small></span><Icon name="arrow" size={16} />
+              <Icon name="file" size={18} /><span className="article-list-title">{a.title}<small>{packs.find(pack => pack.id === a.packId)?.name} · Available offline</small><span className="article-list-meta">{a.source && <small>Source: {a.source}</small>}{a.last_verified && <small>Last verified: {a.last_verified}</small>}</span></span><Icon name="arrow" size={16} />
             </button>
           ))}
         </section>

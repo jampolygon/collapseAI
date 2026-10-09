@@ -2,6 +2,7 @@
 id: food
 name: Food & Farming
 license: CC BY-SA 4.0, CollapseAI team. Based on USDA / FAO food safety guidance.
+last_verified: 2026-10-09
 ---
 
 # Food safety when the power is out
