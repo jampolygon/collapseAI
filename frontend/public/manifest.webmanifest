@@ -4,7 +4,7 @@
   "description": "Offline survival assistant with on-device AI",
   "start_url": "./",
   "display": "standalone",
-  "background_color": "#0f1a12",
-  "theme_color": "#0f1a12",
+  "background_color": "#fafafa",
+  "theme_color": "#fafafa",
   "icons": [{ "src": "icon.svg", "sizes": "any", "type": "image/svg+xml" }]
 }

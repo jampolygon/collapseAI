@@ -15,6 +15,7 @@
     "preview": "npm run preview --workspace @collapse-ai/frontend --",
     "preview:phone": "npm run preview:phone --workspace @collapse-ai/frontend --",
     "typecheck": "npm run typecheck --workspace @collapse-ai/frontend --",
+    "test:ui": "npm run test:ui --workspace @collapse-ai/frontend --",
     "packs": "python backend/scripts/build_packs.py"
   }
 }

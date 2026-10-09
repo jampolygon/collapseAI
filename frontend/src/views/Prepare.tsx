@@ -3,13 +3,17 @@ import { KITS, MODELS, PACKS, modelKey, packKey } from '../lib/catalog';
 import { recommendModel, fmtBytes, fmtMB } from '../lib/device';
 import { enqueue, importFile, pause, removeDownload, resume, type DLItem } from '../lib/downloads';
 import { useDevice, useLocalState } from '../hooks';
+import { Icon, packIcon, plainLabel } from '../components/Icon';
+import { Status, type StatusState } from '../components/Status';
+import { cacheLabel, type SystemSnapshot } from '../ui/system';
+import { Skeleton } from '../components/Skeleton';
 
 const TIPS = [
   'Use Wi-Fi if you can. Big downloads can eat your mobile data.',
   'Keep the screen on and the charger plugged in while downloading.',
-  'If the signal drops, the download continues where it stopped. Nothing is lost.',
+  'If the signal drops, resume the download. Completed parts stay on this device.',
   'Download now, while internet still works. In a disaster, the network is the first thing to go.',
-  'Once downloaded, everything works in airplane mode. Try it!',
+  'After downloading, check the app cache and test a reload in airplane mode.',
   'Smaller AI = faster answers. You can always download a smarter one later.',
   'Pick only the topics you need to save space. You can add more anytime.',
 ];
@@ -18,9 +22,11 @@ interface Props {
   downloads: DLItem[];
   online: boolean;
   onGoSurvive: () => void;
+  system: SystemSnapshot;
+  modelName: string | null;
 }
 
-export default function Prepare({ downloads, online, onGoSurvive }: Props) {
+export default function Prepare({ downloads, online, onGoSurvive, system, modelName }: Props) {
   const device = useDevice();
   const rec = device ? recommendModel(device) : null;
   const [modelId, setModelId] = useLocalState<string | null>('cai.prep.model', null);
@@ -77,40 +83,44 @@ export default function Prepare({ downloads, online, onGoSurvive }: Props) {
   const visibleModels = showAllModels ? MODELS : MODELS.filter((m) => m.id === chosenModel || m.id === rec?.model.id);
   const active = downloads.filter((d) => d.status !== 'done');
   const finished = downloads.filter((d) => d.status === 'done');
+  const selectedPacksDone = packIds.filter(id => byKey.get(packKey(id))?.status === 'done').length;
+  const selectedModelDownload = model ? byKey.get(modelKey(model.id)) : undefined;
+  const selectedFinished = !!model && selectedModelDownload?.status === 'done' && selectedPacksDone === packIds.length;
+  const cacheState = (value: SystemSnapshot['appCache']): StatusState => value === 'cached' ? 'ready' : value === 'checking' ? 'busy' : value === 'error' ? 'error' : 'pending';
 
   return (
-    <div className="stack">
+    <div className="page-content prepare-page">
+      <header className="page-intro"><span className="eyebrow">Prepare / System setup</span><h2>Set up for offline use.</h2><p>Download your model and knowledge while you have a connection.<br />Keep track of what is stored, cached, and actually loaded.</p></header>
       {!online && (
-        <div className="banner warn">You are offline. Downloads will start automatically when internet comes back.</div>
+        <div className="banner warn"><Icon name="info" size={18} />You are offline. Connection errors will retry when the network returns. Paused downloads need Resume.</div>
       )}
-
+      <div className="setup-layout"><div className="setup-sections">
       {/* ---------- Device ---------- */}
-      <section className="card">
-        <h2>Your device</h2>
+      <section className="setup-section device-section">
+        <div className="section-heading"><h3>Your device</h3><span className="muted tiny mono">Detected capabilities</span></div>
         {device ? (
           <div className="specs">
-            <span>{device.mobile ? '📱 Phone' : '💻 Computer'}</span>
-            <span>🧠 {device.ramKnown ? `${device.ramGB}${device.ramGB >= 8 ? '+' : ''} GB memory` : 'memory unknown'}</span>
-            <span>⚙️ {device.cores} CPU cores</span>
-            <span>{device.webgpu ? '🎮 GPU available' : '🎮 no GPU boost'}</span>
-            <span>💾 {fmtMB(device.freeStorageMB)} free for the app</span>
+            <span><Icon name="monitor" size={16} />{device.mobile ? 'Phone' : 'Computer'}</span>
+            <span>{device.ramKnown ? `${device.ramGB}${device.ramGB >= 8 ? '+' : ''} GB memory` : 'Memory unknown'}</span>
+            <span>{device.cores} CPU cores</span>
+            <span>{device.webgpu ? 'GPU available' : 'No GPU boost'}</span>
+            <span>{fmtMB(device.freeStorageMB)} available storage estimate</span>
           </div>
         ) : (
-          <p className="muted">Checking your device…</p>
+          <Skeleton label="Checking your device…" lines={3} className="device-skeleton" />
         )}
       </section>
 
       {/* ---------- Step 1: model ---------- */}
-      <section className="card">
-        <h2>
-          <span className="step">1</span> Choose your AI
-        </h2>
+      <section className="setup-section">
+        <div className="section-heading"><h3><span className="step">01</span> Local model</h3><span className="muted tiny">One model runs at a time</span></div>
         {rec && (
           <p className="muted">
             We recommend <b>{rec.model.name}</b>. {rec.reason}
           </p>
         )}
         <div className="grid">
+          {!device && visibleModels.length === 0 && <Skeleton label="Finding a suitable model…" lines={3} className="model-choice-skeleton" />}
           {visibleModels.map((m) => {
             const dl = byKey.get(modelKey(m.id));
             return (
@@ -121,11 +131,11 @@ export default function Prepare({ downloads, online, onGoSurvive }: Props) {
                   {rec?.model.id === m.id && <span className="badge">Recommended</span>}
                   {dl?.status === 'done' && <span className="badge ok">Downloaded</span>}
                 </div>
-                <div className="muted small">
+                <div className="muted small mono">
                   {fmtMB(m.sizeMB)} · {m.speed}
                 </div>
                 <p className="small">{m.blurb}</p>
-                <div className="muted tiny">{m.family}</div>
+                <div className="muted tiny mono">{m.family}</div>
               </label>
             );
           })}
@@ -136,18 +146,16 @@ export default function Prepare({ downloads, online, onGoSurvive }: Props) {
       </section>
 
       {/* ---------- Step 2: knowledge ---------- */}
-      <section className="card">
-        <h2>
-          <span className="step">2</span> Choose your knowledge
-        </h2>
+      <section className="setup-section">
+        <div className="section-heading"><h3><span className="step">02</span> Knowledge packs</h3><span className="muted tiny">Choose a kit or select topics</span></div>
         <div className="kits">
           {KITS.map((k) => (
-            <button key={k.id} className={`kit ${kitId === k.id ? 'selected' : ''}`} onClick={() => chooseKit(k.id)}>
+            <button key={k.id} aria-pressed={kitId === k.id} className={`kit ${kitId === k.id ? 'selected' : ''}`} onClick={() => chooseKit(k.id)}>
               <b>{k.name}</b>
               <small>{k.blurb}</small>
             </button>
           ))}
-          <button className={`kit ${kitId === 'custom' ? 'selected' : ''}`} onClick={() => setKitId('custom')}>
+          <button aria-pressed={kitId === 'custom'} className={`kit ${kitId === 'custom' ? 'selected' : ''}`} onClick={() => setKitId('custom')}>
             <b>Custom</b>
             <small>Pick only the topics you need.</small>
           </button>
@@ -158,9 +166,9 @@ export default function Prepare({ downloads, online, onGoSurvive }: Props) {
             return (
               <label key={p.id} className={`pack ${packIds.includes(p.id) ? 'selected' : ''}`}>
                 <input type="checkbox" checked={packIds.includes(p.id)} onChange={() => togglePack(p.id)} />
-                <span className="pack-icon">{p.icon}</span>
+                <span className="pack-icon"><Icon name={packIcon(p.id)} size={19} /></span>
                 <span className="pack-body">
-                  <b>{p.name}</b> <span className="muted small">~{fmtMB(p.sizeMB)}</span>
+                  <b>{p.name}</b> <span className="muted tiny mono">{dl?.status === 'done' ? fmtBytes(dl.total) : `~${fmtMB(p.sizeMB)} planned`}</span>
                   {dl?.status === 'done' && <span className="badge ok">Downloaded</span>}
                   <br />
                   <span className="small muted">{p.blurb}</span>
@@ -169,17 +177,16 @@ export default function Prepare({ downloads, online, onGoSurvive }: Props) {
             );
           })}
         </div>
+        <p className="muted tiny">Catalog estimates reflect planned pack sizes. Current demo packs are smaller; downloaded sizes are shown after completion.</p>
       </section>
 
       {/* ---------- Step 3: download ---------- */}
-      <section className="card">
-        <h2>
-          <span className="step">3</span> Download
-        </h2>
+      <section className="setup-section download-section">
+        <div className="section-heading"><h3><span className="step">03</span> Downloads</h3></div>
         <button className="primary big" disabled={nothingToDo} onClick={downloadAll}>
-          {nothingToDo ? (busy ? 'Downloading… you can keep using the app' : '✓ Everything selected is downloaded') : `Download selected · ${fmtMB(totalMB)}`}
+          <Icon name={selectedFinished ? 'check' : 'download'} size={18} />{nothingToDo ? (selectedFinished ? 'Selected files downloaded' : busy ? 'Downloads in progress' : 'Checking selected files') : `Download selected · ~${fmtMB(totalMB)}`}
         </button>
-        <p className="tip">💡 {TIPS[tip]}</p>
+        <p className="tip"><Icon name="info" size={16} />{TIPS[tip]}</p>
 
         {active.length > 0 && (
           <div className="dl-list">
@@ -198,7 +205,7 @@ export default function Prepare({ downloads, online, onGoSurvive }: Props) {
               ))}
             </div>
             <button className="primary" onClick={onGoSurvive}>
-              Go to Survive mode →
+              Go to Ask <Icon name="arrow" size={16} />
             </button>
           </>
         )}
@@ -206,9 +213,24 @@ export default function Prepare({ downloads, online, onGoSurvive }: Props) {
         <details className="advanced">
           <summary>No internet? Import a model file from SD card / USB / a friend</summary>
           <p className="small muted">Choose a .gguf file you already have. It is copied into the app and works offline.</p>
-          <input type="file" accept=".gguf" onChange={onImport} />
+          <label className="import-label">GGUF model file<input type="file" accept=".gguf" onChange={onImport} /></label>
         </details>
       </section>
+      </div>
+      <aside className="setup-overview" aria-label="Device readiness">
+        <span className="eyebrow">On this device</span><h3>System status</h3>
+        <div className="readiness-list">
+          <Status label="App shell" value={cacheLabel(system.appCache)} state={cacheState(system.appCache)} loading={system.appCache === 'checking'} />
+          <Status label="Knowledge" value={packIds.length ? `${selectedPacksDone}/${packIds.length} selected` : 'None selected'} state={packIds.length > 0 && selectedPacksDone === packIds.length ? 'ready' : 'pending'} />
+          <Status label="Model file" value={selectedModelDownload?.status === 'done' ? 'Downloaded' : selectedModelDownload?.status === 'downloading' || selectedModelDownload?.status === 'queued' ? 'Downloading' : selectedModelDownload?.status === 'error' ? 'Download error' : selectedModelDownload?.status === 'paused' ? 'Paused' : 'Missing'} state={selectedModelDownload?.status === 'done' ? 'ready' : selectedModelDownload?.status === 'error' ? 'error' : selectedModelDownload?.status === 'downloading' || selectedModelDownload?.status === 'queued' ? 'busy' : 'pending'} />
+          <Status label="Local AI" value={modelName ? `${modelName} loaded` : 'Not loaded'} state={modelName ? 'ready' : 'pending'} />
+          <Status label="AI engine" value={modelName ? 'Initialized' : system.engineCache === 'cached' ? 'Cached · idle' : cacheLabel(system.engineCache)} state={modelName ? 'ready' : cacheState(system.engineCache)} loading={!modelName && system.engineCache === 'checking'} />
+          <Status label="Network" value={online ? 'Online' : 'Offline'} state={online ? 'ready' : 'pending'} />
+        </div>
+        {system.cacheError && <p className="error small" role="alert">Cache check failed: {system.cacheError}</p>}
+        <p className="muted tiny cache-note">{system.appCache === 'development' ? 'Development mode does not install the app cache. Use a production preview to check caching.' : 'Cached files and downloaded files are separate. Test a reload in airplane mode before relying on offline access.'}</p>
+        <div className="storage-overview"><div className="section-heading"><span className="small">Browser storage</span><Icon name="monitor" size={16} /></div>{system.storage ? <><div className="storage-amount mono">{fmtBytes(system.storage.usage)}<span> used</span></div><div className="bar" role="progressbar" aria-label="Browser storage used" aria-valuenow={Math.round(system.storage.usage)} aria-valuemin={0} aria-valuemax={Math.max(1, Math.round(system.storage.quota))}><div style={{ width: `${Math.min(100, system.storage.quota ? system.storage.usage / system.storage.quota * 100 : 0)}%` }} /></div><p className="muted tiny mono">of {fmtBytes(system.storage.quota)} estimated quota</p></> : system.appCache === 'checking' ? <Skeleton label="Checking storage…" lines={2} /> : <p className="muted small">Storage estimate unavailable</p>}<p className="muted tiny">Includes this site's stored data and cache. Browser estimates may be rounded.</p></div>
+      </aside></div>
     </div>
   );
 }
@@ -219,23 +241,23 @@ function DownloadRow({ d }: { d: DLItem }) {
   return (
     <div className="dl-row">
       <div className="dl-top">
-        <b>{d.label}</b>
-        <span className="muted small">
+        <b>{plainLabel(d.label)}</b>
+        <span className="muted small mono">
           {d.status === 'done' ? fmtBytes(d.total) : `${fmtBytes(d.done)} / ${d.total ? fmtBytes(d.total) : '?'}`}
         </span>
       </div>
       {d.status !== 'done' && (
-        <div className="bar">
+        <div className="bar" role="progressbar" aria-label={`${plainLabel(d.label)} download progress`} aria-valuenow={d.total ? Math.round(pct) : undefined} aria-valuemin={0} aria-valuemax={100}>
           <div style={{ width: `${pct}%` }} />
         </div>
       )}
       <div className="dl-bottom">
-        <span className={`small status-${d.status}`}>
+        <span className={`small mono status-${d.status}`} role={d.status === 'error' ? 'alert' : undefined}>
           {d.status === 'downloading' && `${pct.toFixed(0)}% · ${fmtBytes(d.speed ?? 0)}/s${eta !== null ? ` · ~${fmtEta(eta)} left` : ''}`}
           {d.status === 'queued' && 'Waiting…'}
           {d.status === 'paused' && 'Paused'}
           {d.status === 'error' && (d.error ?? 'Error')}
-          {d.status === 'done' && '✓ Ready offline'}
+          {d.status === 'done' && <><Icon name="check" size={14} />Downloaded</>}
         </span>
         <span className="row-actions">
           {d.status === 'downloading' && <button onClick={() => pause(d.key)}>Pause</button>}
