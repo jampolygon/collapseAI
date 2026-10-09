@@ -5,16 +5,29 @@ import { chat, loadedModel, type ChatMessage, type ChatStats } from './llm';
 import { search, type Passage } from './knowledge';
 import { smallTalkReply } from './smalltalk';
 
-const SYSTEM = `You are CollapseAI, a kind, calm offline survival and first-aid helper. There is no internet and maybe no doctor.
-Use only the reference information you are given. Do not make up medicine doses.
-Never answer with just "yes" or "no". Always explain why in a full, friendly answer, then say what to do.
-Give short, clear numbered steps, most urgent first. For a simple question, two to four sentences are fine.
-If the reference does not answer the question, say you do not have that information.
-If it is serious, tell the person to get medical help as soon as possible.
+// Tone: a warm, steady companion, not a search engine. Short, but never curt.
+const PERSONA = `You are CollapseAI, a warm, calm and caring survival companion. The person may be scared, tired or alone, with no internet and maybe no doctor.
+Talk like a kind, experienced friend: start with one short, human sentence that shows you understood (for example "That sounds stressful, let's handle it together." or "Good idea, here's how."), then help.
+Never answer with just "yes" or "no". Explain why, then say exactly what to do.
+Use short numbered steps for anything practical, most urgent first. For a simple question, a few friendly sentences are enough.
+Do not make up medicine doses. If someone may be badly hurt or sick, say to get medical help as soon as possible.
+End with one short line of encouragement or a useful next tip when it fits.
 Always answer in English, even if the question is in Tagalog or Taglish.`;
 
+const SYSTEM = `${PERSONA}
+Use the reference information you are given. If it does not answer the question, say so honestly.`;
+
+// No guide matched: answer from the model's own general knowledge, clearly marked, with extra care.
+const GENERAL = `${PERSONA}
+None of the downloaded survival guides cover this question, so answer from your own general knowledge.
+Be practical and specific. If you are not sure, say so instead of guessing.
+For anything medical, poisonous, electrical or dangerous, be extra careful and recommend expert help.`;
+
 export const NO_INFO =
-  "I don't have information on that in your downloaded packs. Try other words, check the Library, or download more topics in Prepare. If someone is hurt or in danger, get medical help or call emergency services (911 in the Philippines) as soon as you can.";
+  "I couldn't find this in your downloaded guides, and the AI isn't started yet, so I can't answer it from general knowledge. Tap Start AI and ask again, try different words, or add more topics in Prepare. If someone is hurt or in danger, get medical help or call 911 (Philippines) right away.";
+
+/** Shown above answers that come from the model's own knowledge instead of the guides. */
+export const GENERAL_NOTE = 'Not from your downloaded guides: general knowledge from the AI. Double-check anything important.';
 
 /** A finished earlier exchange, used so follow-up questions make sense. */
 export interface HistoryTurn {
@@ -42,7 +55,7 @@ export function retrieve(question: string, history: HistoryTurn[] = [], k = 3): 
 export interface AskResult {
   sources: Passage[];
   stats: ChatStats | null;
-  kind: 'answer' | 'smalltalk' | 'no-info';
+  kind: 'answer' | 'smalltalk' | 'no-info' | 'general';
 }
 
 export async function ask(
@@ -67,19 +80,27 @@ export async function ask(
   const history = (cb.history ?? []).slice(-HISTORY_TURNS);
   const sources = retrieve(question, history);
   cb.onSources(sources);
+  const historyMessages = history.flatMap<ChatMessage>((t) => [
+    { role: 'user', content: t.q },
+    { role: 'assistant', content: t.a.slice(0, HISTORY_ANSWER_CHARS) },
+  ]);
   if (!sources.length) {
-    cb.onToken(NO_INFO);
-    return { sources, stats: null, kind: 'no-info' };
+    if (!loadedModel()) {
+      cb.onToken(NO_INFO);
+      return { sources, stats: null, kind: 'no-info' };
+    }
+    // No guide matched, but an LLM still knows a lot (e.g. "how do I make a watering can?").
+    const stats = await chat([{ role: 'system', content: GENERAL }, ...historyMessages, { role: 'user', content: question }], {
+      onToken: cb.onToken, onPrompt: cb.onPrompt, signal: cb.signal, maxTokens: cb.maxTokens,
+    });
+    return { sources, stats, kind: 'general' };
   }
   if (!loadedModel()) return { sources, stats: null, kind: 'answer' };
 
   const ref = sources.map((s) => `## ${s.title}\n${s.text}`).join('\n\n');
   const messages: ChatMessage[] = [
     { role: 'system', content: SYSTEM },
-    ...history.flatMap<ChatMessage>((t) => [
-      { role: 'user', content: t.q },
-      { role: 'assistant', content: t.a.slice(0, HISTORY_ANSWER_CHARS) },
-    ]),
+    ...historyMessages,
     { role: 'user', content: `Reference information:\n${ref}\n\nQuestion: ${question}` },
   ];
   const stats = await chat(messages, { onToken: cb.onToken, onPrompt: cb.onPrompt, signal: cb.signal, maxTokens: cb.maxTokens });
