@@ -226,8 +226,8 @@ export default function Ask({ downloads, onModelChange, onGoPrepare }: Props) {
             <Icon name="cpu" size={18} />
             <select aria-label="Downloaded AI model" value={selected} onChange={(e) => setSelected(e.target.value)} disabled={loading || busy}>
               {available.map((m) => (
-                <option key={m.id} value={m.id}>
-                  {m.name} ({m.family})
+                <option key={m.id} value={m.id} title={m.family}>
+                  {m.name} · {m.family.split(' · ')[0]}
                 </option>
               ))}
             </select>
@@ -261,7 +261,7 @@ export default function Ask({ downloads, onModelChange, onGoPrepare }: Props) {
         {loadErr && <p className="error small" role="alert"><Icon name="info" size={16} />Could not start the AI: {loadErr}</p>}
         {loading && <Skeleton label="Initializing the local model" lines={2} className="model-skeleton" />}
         {!current && available.length > 0 && !loading && (
-          <p className="muted small">Without the AI, you still get matching library articles for every question.</p>
+          <p className="muted small model-hint">Without the AI, you still get matching library articles for every question.</p>
         )}
       </section>
 

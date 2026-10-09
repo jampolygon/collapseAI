@@ -407,3 +407,21 @@ strong, b { font-weight: 600; }
 .chat-open { flex: 1; min-width: 0; justify-content: space-between; border: 0; background: none; text-align: left; gap: 12px; }
 .chat-open span:first-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .general-note { display: flex; align-items: flex-start; gap: 6px; border-left: 2px solid var(--border-strong); padding-left: 8px; margin-bottom: 6px; }
+
+/* Chat bar aligned with the model controls */
+.chat-bar { margin: 10px 36px 0; }
+
+/* Mobile cleanup: give the conversation the screen */
+@media (max-width: 760px) {
+  .model-controls { padding: 8px 0; }
+  .model-controls .model-hint { display: none; }
+  .loader { gap: 8px; }
+  .loader select { min-width: 0; font-size: 14px; padding: 6px 8px; }
+  .loader .primary { min-height: 40px; padding: 6px 12px; }
+  .gpu-control { margin-top: 4px; font-size: 13px; }
+  .chat-bar { margin: 6px 18px 0; gap: 6px; }
+  .chat-bar button { min-height: 34px; padding: 4px 10px; font-size: 13px; }
+  .chat-history { margin: 6px 18px 8px; max-height: 45vh; }
+  .composer-hints { display: none; }
+  .disclaimer { font-size: 11px; line-height: 1.4; padding: 4px 8px 0; }
+}
