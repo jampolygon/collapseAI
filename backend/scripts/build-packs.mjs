@@ -34,12 +34,17 @@
  */
 
 import { readFileSync, writeFileSync, mkdirSync, readdirSync } from 'node:fs';
-import { resolve } from 'node:path';
+import { resolve, relative, sep } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
-const ROOT = resolve(fileURLToPath(new URL('.', import.meta.url)), '..');
-const SRC = resolve(ROOT, 'content');
-const OUT = resolve(ROOT, 'public', 'packs');
+/**
+ * Monorepo layout: content lives in backend/content, built packs are served by the
+ * frontend from frontend/public/packs. Resolve from this file so it works from any cwd.
+ * This script is at backend/scripts/, so the backend root is one level up.
+ */
+const BACKEND = resolve(fileURLToPath(new URL('.', import.meta.url)), '..');
+const SRC = resolve(BACKEND, 'content');
+const OUT = resolve(BACKEND, '..', 'frontend', 'public', 'packs');
 
 /** Recognised per-article metadata keys. */
 const ARTICLE_KEYS = new Set(['category', 'source', 'tags', 'disaster_types', 'last_verified']);
@@ -183,14 +188,16 @@ export function main(argv = process.argv.slice(2)) {
         same = false;
       }
       if (same) continue;
-      console.error(`out of date: public/packs/${pack.id}.json  (run "npm run packs")`);
+      console.error(`out of date: ${relative(resolve(BACKEND, '..'), dest).split(sep).join('/')}  (run "npm run packs")`);
       stale++;
       continue;
     }
 
     writeFileSync(dest, json, 'utf8');
     sizes[pack.id] = Buffer.byteLength(json, 'utf8');
-    console.log(`public/packs/${pack.id}.json: ${pack.articles.length} articles, ${(sizes[pack.id] / 1000).toFixed(1)} KB`);
+    // Print the path relative to the repo root, so the log reads the same from any cwd.
+    const shown = relative(resolve(BACKEND, '..'), dest).split(sep).join('/');
+    console.log(`${shown}: ${pack.articles.length} articles, ${(sizes[pack.id] / 1000).toFixed(1)} KB`);
   }
 
   if (check) {

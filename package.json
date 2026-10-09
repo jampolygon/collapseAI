@@ -1,38 +1,25 @@
 {
   "name": "collapse-ai",
   "version": "1.0.0",
+  "private": true,
   "description": "CollapseAI - offline survival assistant with on-device LLM + offline knowledge",
-  "scripts": {
-    "dev": "vite",
-    "dev:phone": "vite --mode phone",
-    "build": "vite build",
-    "preview": "vite preview",
-    "preview:phone": "vite build && vite preview --mode phone",
-    "typecheck": "tsc --noEmit",
-    "packs": "node scripts/build-packs.mjs",
-    "packs:check": "node scripts/build-packs.mjs --check",
-    "packs:py": "python scripts/build_packs.py",
-    "test": "vitest run",
-    "test:watch": "vitest"
-  },
-  "keywords": [],
-  "author": "",
   "license": "ISC",
   "type": "module",
-  "dependencies": {
-    "@wllama/wllama": "^3.8.1",
-    "minisearch": "^7.2.0",
-    "react": "^19.3.0",
-    "react-dom": "^19.3.0"
-  },
-  "devDependencies": {
-    "@types/react": "^19.3.0",
-    "@types/react-dom": "^19.3.0",
-    "@vitejs/plugin-basic-ssl": "^2.3.0",
-    "@vitejs/plugin-react": "^6.1.2",
-    "typescript": "^7.0.2",
-    "vite": "^8.3.4",
-    "vitest": "^3.2.7"
-  },
-  "private": true
+  "workspaces": [
+    "frontend"
+  ],
+  "scripts": {
+    "dev": "npm run dev --workspace @collapse-ai/frontend --",
+    "dev:phone": "npm run dev:phone --workspace @collapse-ai/frontend --",
+    "build": "npm run build --workspace @collapse-ai/frontend --",
+    "preview": "npm run preview --workspace @collapse-ai/frontend --",
+    "preview:phone": "npm run preview:phone --workspace @collapse-ai/frontend --",
+    "typecheck": "npm run typecheck --workspace @collapse-ai/frontend --",
+    "test": "npm test --workspace @collapse-ai/frontend -- && npm run test:packs",
+    "test:watch": "npm run test:watch --workspace @collapse-ai/frontend --",
+    "test:packs": "vitest run --dir backend/scripts",
+    "packs": "node backend/scripts/build-packs.mjs",
+    "packs:check": "node backend/scripts/build-packs.mjs --check",
+    "packs:py": "python backend/scripts/build_packs.py"
+  }
 }

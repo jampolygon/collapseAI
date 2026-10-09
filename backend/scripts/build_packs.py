@@ -1,6 +1,6 @@
-"""Build knowledge packs: content/*.md -> public/packs/*.json
+"""Build knowledge packs: backend/content/*.md -> frontend/public/packs/*.json
 
-Usage:  python scripts/build_packs.py
+Usage (repository root):  python backend/scripts/build_packs.py
 
 Markdown format (one file per pack):
 
@@ -25,9 +25,9 @@ import json
 import re
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parent.parent
-SRC = ROOT / "content"
-OUT = ROOT / "public" / "packs"
+ROOT = Path(__file__).resolve().parents[2]
+SRC = ROOT / "backend" / "content"
+OUT = ROOT / "frontend" / "public" / "packs"
 
 
 def slug(s: str) -> str:
