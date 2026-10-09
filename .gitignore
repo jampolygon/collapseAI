@@ -8,3 +8,4 @@ __pycache__/
 *.gguf
 backend/evals/results/*
 !backend/evals/results/.gitkeep
+/public/maps/*.pmtiles

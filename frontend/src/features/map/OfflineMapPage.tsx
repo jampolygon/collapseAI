@@ -172,12 +172,21 @@ export default function OfflineMapPage({ online, theme }: Props) {
   const activeRegion = location ? matchingDownloaded : selectedDownloaded;
   const matchingPublished = location ? catalog?.regions.find(region => regionContains(region, location)) : undefined;
 
+  const selectMapLocation = useCallback((point: MapCenter) => {
+    if (!activeRegion || !regionContains(activeRegion, point)) {
+      setLocationState({ kind: 'error', message: 'That point is outside the downloaded map coverage. Choose a point within the Philippines coverage bounds.' });
+      return;
+    }
+    setLocation(point);
+    setLocationState({ kind: 'ready', message: `Map location selected: ${point[1].toFixed(4)}, ${point[0].toFixed(4)}.` });
+  }, [activeRegion]);
+
   return (
     <div className="page-content map-page">
       <header className="page-intro">
         <span className="eyebrow">Map / Offline maps</span>
         <h2>Maps that stay with you.</h2>
-        <p>Download a prepared region before you need it. Map files and your location stay on this device.</p>
+        <p>Download a prepared region before you need it. Use GPS or tap the map to choose a location; map files and location stay on this device.</p>
       </header>
 
       <section className="map-controls" aria-label="Map options">
@@ -215,7 +224,7 @@ export default function OfflineMapPage({ online, theme }: Props) {
       {!catalogLoading && catalog?.regions.length === 0 && (
         <div className="map-notice" role="status">
           <Icon name="info" size={18} />
-          <span>The Metro Manila archive has not been published to the offline-maps-v1 GitHub Release yet. Existing downloaded maps remain available below.</span>
+          <span>The offline-maps-v1 GitHub Release does not list any map regions yet. Existing downloaded maps remain available below.</span>
         </div>
       )}
 
@@ -228,7 +237,7 @@ export default function OfflineMapPage({ online, theme }: Props) {
               <button className="danger map-delete" onClick={() => void removeMap(activeRegion)} aria-label={`Delete ${activeRegion.name} map`}><Icon name="trash" size={18} />Delete map</button>
             </div>
           </div>
-          <OfflineMapCanvas region={activeRegion} theme={theme} location={location} />
+          <OfflineMapCanvas region={activeRegion} theme={theme} location={location} onLocationSelect={selectMapLocation} />
           {busy && progress && (
             <div className="map-download-progress">
               <progress aria-label="Map update progress" max={progress.totalBytes} value={progress.receivedBytes} />
@@ -260,7 +269,7 @@ export default function OfflineMapPage({ online, theme }: Props) {
         <div className="map-empty">
           <Icon name="compass" size={28} />
           <h3>No offline map available yet</h3>
-          <p>Once the prepared Metro Manila PMTiles archive is published, you can download it here and browse it without internet.</p>
+          <p>Once a validated region is published, you can download it here and browse it without internet.</p>
           {!online && <p className="muted small">You are offline. No map archive is stored on this device yet.</p>}
         </div>
       ) : location && !matchingDownloaded ? (

@@ -172,29 +172,72 @@ See [backend/README.md](backend/README.md) for the content workflow and
 
 ### Offline maps
 
-The Map screen includes the offline map viewer, local GPS positioning, and prepared-region
-download/storage flow. Map archives are binary release assets and are not checked into the app.
-The current contract expects `regions.json` and a Metro Manila `.pmtiles` archive on the
-`offline-maps-v1` GitHub Release. The app accesses those files through same-origin `/offline-maps/`
-routes because GitHub Release assets do not permit browser CORS; Vite proxies this route in
-development and Vercel rewrites it in production. Each catalog entry must provide a real byte size, SHA-256,
-geographic bounds/center, revision, update date, and the `protomaps-basemaps` schema identifier.
-`pmtilesUrl` must use the matching same-origin route, such as
-`./offline-maps/metro-manila.pmtiles`; the matching release asset filename is
-`metro-manila.pmtiles`.
-Downloads are capped at 128 MB, validated as PMTiles v3 vector archives, and stored in IndexedDB.
+The Map screen includes the offline map viewer, local GPS positioning, manual map-point selection,
+and prepared-region download/storage flow. Map archives are binary release assets and are not
+checked into the app.
+The current contract expects `regions.json` and a Philippines-wide `philippines.pmtiles` archive on
+the `offline-maps-v1` GitHub Release. The manifest uses the existing version-1 region schema with
+ID `philippines`, name/province `Philippines`, real archive size, SHA-256, header bounds/center,
+checksum-bound revision (`sha256-<archive-sha256>`), update date, and `protomaps-basemaps` schema.
+Its `pmtilesUrl` is `./offline-maps/philippines.pmtiles`. The app accesses both files through
+same-origin `/offline-maps/` routes because GitHub Release assets do not permit browser CORS; Vite proxies these routes in
+development and Vercel rewrites only the catalog and Philippines archive routes in production.
+Downloads are capped at 1 GiB, validated for exact size and checksum, PMTiles v3 vector type,
+matching header bounds, and the map style's required vector layers, then stored in IndexedDB.
 
-**No Metro Manila archive or release catalog has been published yet.** The Map screen will say
-so until the assets exist; do not fabricate catalog values or claim a region is ready offline.
+**The Philippines archive is not yet published.** The current public GitHub repository has no
+`offline-maps-v1` release or tags. Its required assets are `regions.json` and
+`philippines.pmtiles`. The Map screen reports the missing catalog/selected region by its asset
+name and ID; it does not claim a region is ready offline until the downloaded archive passes
+validation and is stored locally.
 Emergency POIs are also intentionally empty pending a sourced, independently verified dataset.
-OSM attribution is displayed in the map. Offline routing, live conditions, arbitrary-area
-downloads, and saved places are not available.
+The map attribution control credits OpenStreetMap contributors, ESA WorldCover (CC BY 4.0), and
+Protomaps Basemaps. Offline routing, live conditions, arbitrary-area downloads, and saved places
+are not available.
 
-To publish coverage, build the PMTiles archive from permitted OSM source data using the matching
-Protomaps basemap schema, review attribution/licensing, calculate the exact file byte count and
-SHA-256, then attach both the archive and a matching `regions.json` manifest to the release.
-Test the deployed release proxy and airplane-mode map rendering on the target phone before
-announcing coverage. Never bulk-download tiles from `tile.openstreetmap.org`.
+For local development, Vite serves `public/maps/regions.json` and streams the local
+`public/maps/philippines.pmtiles` at `/maps/`, including byte-range requests. Development uses
+that local catalog; production continues to use the same-origin `/offline-maps/` Vercel rewrite
+to the `offline-maps-v1` GitHub Release. The large `.pmtiles` file is ignored by Git and should
+not be committed. Run `npm run maps:catalog` after replacing it to regenerate and validate the
+manifest from its actual header and contents.
+
+The included local archive was extracted from the **20261009.pmtiles** build listed on the
+official Protomaps Builds page, using the repository's PMTiles CLI `pmtiles.exe` 1.31.2:
+
+```powershell
+& 'E:\HACKATHON\Hackabetlog\go-pmtiles_1.31.2_Windows_x86_64\pmtiles.exe' extract `
+  'https://build.protomaps.com/20261009.pmtiles' `
+  'E:\HACKATHON\Hackabetlog\collapseAI\public\maps\philippines.pmtiles' `
+  --bbox=116.8,4.4,126.8,21.3 --minzoom=0 --maxzoom=13 --download-threads=8
+& 'E:\HACKATHON\Hackabetlog\go-pmtiles_1.31.2_Windows_x86_64\pmtiles.exe' verify `
+  'E:\HACKATHON\Hackabetlog\collapseAI\public\maps\philippines.pmtiles'
+npm run maps:catalog
+```
+
+Zoom 13 is a size/detail compromise: the current country extract is about 159 MB, retains
+countrywide road and place detail through zoom 13, but omits the source's zoom 14–15 detail.
+The manifest validator checks PMTiles v3 vector type, non-empty tile index, the actual header
+bounds, Philippines coverage envelope `116.9,4.5,126.7,21.2`, required style layers, the 1 GiB
+limit, and actual SHA-256. `regions.json` records actual size/header bounds/center and a
+checksum-bound revision. This is a real PMTiles archive, not the upstream `.osm.pbf` or the
+worldwide source archive.
+
+The reproducible GitHub workflow selects the newest dated archive from the official Protomaps
+build listing, installs PMTiles CLI 1.31.2, extracts the same Philippines bounds at zoom 13,
+verifies the archive, and creates release-form `regions.json`. Run **Build offline map archive**,
+inspect/render the artifact and test it on a device in airplane mode, then run **Publish offline
+map release** with that successful build's run ID. The publish workflow revalidates and uploads
+exactly `regions.json` and `philippines.pmtiles` to the `offline-maps-v1` release.
+
+The Vite proxy integration test covers redirect following, binary streaming, byte ranges, and
+upstream 404 propagation. The app fetches each release asset in full before storing it locally,
+so byte ranges are not required by its download/render path; Vite's local development map route
+supports ranges for CLI and diagnostics.
+
+The Vercel external rewrite retains the upstream status and response body, including missing-asset
+errors. No deployed Vercel origin was discoverable from this repository; test that route after
+deployment. Never bulk-download tiles from `tile.openstreetmap.org`.
 Bundled Noto Sans glyphs and sprite artwork include their upstream OFL and MIT license notices
 under `frontend/public/map-assets/`.
 

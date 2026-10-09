@@ -1,0 +1,59 @@
+name: Build offline map archive
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.24'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install PMTiles CLI
+        run: |
+          go install github.com/protomaps/go-pmtiles@v1.31.2
+          echo "$(go env GOPATH)/bin" >> "$GITHUB_PATH"
+      - name: Select newest published Protomaps build
+        id: source
+        run: |
+          curl --fail --location --retry 4 --retry-all-errors \
+            https://maps.protomaps.com/builds/ \
+            --output "$RUNNER_TEMP/protomaps-builds.html"
+          source_file="$(grep -oE '[0-9]{8}\.pmtiles' "$RUNNER_TEMP/protomaps-builds.html" | sort -r | head -n 1)"
+          test -n "$source_file" || { echo "No dated PMTiles build was found in the official listing." >&2; exit 1; }
+          source_url="https://build.protomaps.com/$source_file"
+          pmtiles show "$source_url" --header-json | tee "$RUNNER_TEMP/source-header.json"
+          echo "url=$source_url" >> "$GITHUB_OUTPUT"
+          echo "file=$source_file" >> "$GITHUB_OUTPUT"
+      - name: Extract and validate Philippines coverage
+        env:
+          SOURCE_URL: ${{ steps.source.outputs.url }}
+        run: |
+          pmtiles extract "$SOURCE_URL" "$RUNNER_TEMP/philippines.pmtiles" \
+            --bbox=116.8,4.4,126.8,21.3 \
+            --minzoom=0 \
+            --maxzoom=13 \
+            --download-threads=8
+          pmtiles show "$RUNNER_TEMP/philippines.pmtiles" --header-json
+          pmtiles verify "$RUNNER_TEMP/philippines.pmtiles"
+          npm ci
+          node frontend/scripts/prepare-offline-map-release.mjs \
+            "$RUNNER_TEMP/philippines.pmtiles" \
+            "$RUNNER_TEMP/offline-map-release" \
+            release
+          printf '%s\n' "$SOURCE_URL" > "$RUNNER_TEMP/offline-map-release/source-url.txt"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: offline-map-release
+          path: ${{ runner.temp }}/offline-map-release/*
+          if-no-files-found: error
+          retention-days: 14

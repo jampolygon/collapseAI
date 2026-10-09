@@ -12,6 +12,7 @@ interface Props {
   region: DownloadedMapRegion;
   theme: Theme;
   location: MapCenter | null;
+  onLocationSelect: (point: MapCenter) => void;
 }
 
 function poiCollection(points: EmergencyPoi[]): FeatureCollection<Point, EmergencyPoi> {
@@ -32,12 +33,12 @@ function locationCollection(location: MapCenter | null): FeatureCollection<Point
     features: location ? [{
       type: 'Feature',
       geometry: { type: 'Point', coordinates: location },
-      properties: { label: 'Current location' },
+      properties: { label: 'Selected location' },
     }] : [],
   };
 }
 
-export default function OfflineMapCanvas({ region, theme, location }: Props) {
+export default function OfflineMapCanvas({ region, theme, location, onLocationSelect }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<maplibregl.Map | null>(null);
   const [mapReady, setMapReady] = useState(false);
@@ -52,7 +53,8 @@ export default function OfflineMapCanvas({ region, theme, location }: Props) {
       container,
       style: createOfflineMapStyle(sourceUrl, theme),
       center: region.center,
-      zoom: 11,
+      zoom: 4.6,
+      maxZoom: 13,
       maxBounds: [
         [region.bounds[0] - 0.1, region.bounds[1] - 0.1],
         [region.bounds[2] + 0.1, region.bounds[3] + 0.1],
@@ -98,6 +100,7 @@ export default function OfflineMapCanvas({ region, theme, location }: Props) {
       });
       setMapReady(true);
     });
+    map.on('click', event => onLocationSelect([event.lngLat.lng, event.lngLat.lat]));
     map.on('error', event => {
       if (event.error) setMapError(`Map rendering failed: ${event.error.message}`);
     });
@@ -109,7 +112,7 @@ export default function OfflineMapCanvas({ region, theme, location }: Props) {
       map.remove();
       mapRef.current = null;
     };
-  }, [region, theme]);
+  }, [region, theme, onLocationSelect]);
 
   useEffect(() => {
     const map = mapRef.current;

@@ -1,5 +1,6 @@
 export type MapBounds = [west: number, south: number, east: number, north: number];
 export type MapCenter = [longitude: number, latitude: number];
+export const PHILIPPINES_COVERAGE_BOUNDS: MapBounds = [116.9, 4.5, 126.7, 21.2];
 
 export interface MapRegion {
   id: string;
@@ -59,4 +60,4 @@ export interface EmergencyPoi {
   lastVerifiedAt: string;
 }
 
-export const MAX_MAP_ARCHIVE_BYTES = 128 * 1024 * 1024;
+export const MAX_MAP_ARCHIVE_BYTES = 1024 * 1024 * 1024;
