@@ -3,6 +3,7 @@
 import MiniSearch from 'minisearch';
 import { PACKS, packKey } from './catalog';
 import { getFile } from './downloads';
+import { isLocationQuestion } from './smalltalk';
 
 export interface Article {
   id: string;
@@ -125,7 +126,7 @@ export function searchTerms(q: string): string[] {
 }
 
 /** Packs that are general reference material: they rank below the hand-written guides. */
-const REFERENCE_PACKS = new Set(['wikipedia-essentials', 'wikipedia-prepared']);
+const REFERENCE_PACKS = new Set(['wikipedia-essentials', 'wikipedia-prepared', 'wikipedia-full']);
 
 let index: MiniSearch<Passage> | null = null;
 let passages = new Map<string, Passage>();
@@ -220,6 +221,7 @@ const minScore = () => (passages.size < 20 ? 0 : 2.4 * Math.log(passages.size));
 
 export function search(query: string, k = 3): Passage[] {
   if (!index) return [];
+  if (isLocationQuestion(query)) return []; // "where" questions belong to Map/Compass, not the library
   const terms = searchTerms(query);
   if (!terms.length) return [];
   const results = index.search(terms.join(' '), { combineWith: 'OR' });

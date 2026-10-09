@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { smallTalkReply } from './smalltalk';
+import { isLocationQuestion, smallTalkReply } from './smalltalk';
 
 describe('smallTalkReply', () => {
   it('answers greetings in English and Tagalog, with or without "po"', () => {
@@ -22,5 +22,19 @@ describe('smallTalkReply', () => {
   it('ignores empty input', () => {
     expect(smallTalkReply('   ')).toBeNull();
     expect(smallTalkReply('🙂')).toBeNull();
+  });
+});
+
+describe('location questions', () => {
+  it('points "nearest X" questions to Map / Compass', () => {
+    for (const q of ['nearest hospital', 'where is the closest evacuation center', 'pinakamalapit na ospital', 'clinic near me']) {
+      expect(isLocationQuestion(q), q).toBe(true);
+      expect(smallTalkReply(q), q).toMatch(/Map/);
+    }
+  });
+  it('does not hijack real survival questions that mention nearness', () => {
+    for (const q of ['lightning nearby what do I do', 'malapit na ang bagyo ano gagawin', 'how near is the typhoon']) {
+      expect(isLocationQuestion(q), q).toBe(false);
+    }
   });
 });
