@@ -2,11 +2,14 @@
 id: first-aid
 name: First Aid
 license: CC BY-SA 4.0, CollapseAI team. Based on standard first-aid guidance (Red Cross, WHO).
+last_verified: 2026-10-09
 ---
 
 # Severe bleeding
 category: First aid
 source: CollapseAI Essentials (based on Red Cross / Stop the Bleed guidance)
+tags: bleeding, dugo, sugat, tourniquet, wound, shock
+disaster_types: accident
 
 Severe bleeding can kill in minutes. Act immediately.
 
@@ -23,6 +26,8 @@ Watch for shock: pale cold skin, fast weak pulse, confusion. Lay the person down
 # Burns
 category: First aid
 source: CollapseAI Essentials (based on WHO / Red Cross burn first aid)
+tags: burn, paso, nasunog, fire, scalding, chemical burn
+disaster_types: accident, fire
 
 1. Stop the burning: move away from the heat, put out flames (stop, drop and roll).
 2. Cool the burn under cool, clean running water for 20 minutes. Do not use ice, ice water, toothpaste, butter, oil or soy sauce. These make burns worse.
@@ -38,6 +43,8 @@ Chemical burns: brush off dry chemicals, then rinse with lots of water for at le
 # CPR (cardiopulmonary resuscitation)
 category: First aid
 source: CollapseAI Essentials (based on AHA / Red Cross CPR guidelines)
+tags: cpr, unconscious, hinimatay, not breathing, compressions, drowning
+disaster_types: accident, drowning
 
 Use CPR when a person is unresponsive and not breathing normally (no breathing or only gasping).
 
@@ -52,6 +59,7 @@ Children: use one or two hands, push about 5 cm deep. Infants: use two fingers, 
 
 # Choking
 category: First aid
+tags: choking, nabulunan, airway, back blows, abdominal thrusts
 source: CollapseAI Essentials (based on Red Cross choking guidance)
 
 Signs: cannot speak, cough or breathe; hands at the throat; face turning blue.
@@ -69,6 +77,8 @@ If the person becomes unconscious, lower them to the ground and start CPR. Check
 
 # Broken bones (fractures)
 category: First aid
+tags: fracture, bali, broken bone, splint, sprain
+disaster_types: accident
 source: CollapseAI Essentials (based on Red Cross fracture guidance)
 
 Signs: pain, swelling, bruising, deformity, unable to move or put weight on the limb.
@@ -85,6 +95,8 @@ Suspect a neck or back injury after a fall from height, vehicle crash or diving 
 
 # Shock
 category: First aid
+tags: shock, hinimatay, pale cold skin, low blood pressure, collapse
+disaster_types: accident
 source: CollapseAI Essentials (based on Red Cross shock guidance)
 
 Shock is when not enough blood reaches the organs. It can follow severe bleeding, burns, dehydration, serious infection or allergic reaction. It is life-threatening.
@@ -101,6 +113,8 @@ Signs: pale, cold, clammy skin; fast, weak pulse; fast shallow breathing; dizzin
 
 # Heat stroke and heat exhaustion
 category: First aid
+tags: heat stroke, heat exhaustion, dehydration, cooling, dizziness
+disaster_types: heat
 source: CollapseAI Essentials (based on WHO / CDC heat illness guidance)
 
 Heat exhaustion: heavy sweating, weakness, dizziness, headache, nausea, muscle cramps. Move to shade, loosen clothes, drink water or oral rehydration solution, cool with wet cloths and fanning.
@@ -116,6 +130,7 @@ Prevention: drink water often, rest in shade during midday heat, wear light loos
 
 # Dehydration and oral rehydration solution (ORS)
 category: First aid
+tags: dehydration, ors, oral rehydration, diarrhea, tubig, heat
 source: WHO oral rehydration guidance
 
 Signs of dehydration: thirst, dry mouth, little or dark urine, dizziness, sunken eyes, in babies a sunken soft spot on the head. Severe: very sleepy or unconscious, unable to drink.
@@ -132,6 +147,8 @@ Get help if the person cannot drink, keeps vomiting, has blood in stool, or beco
 
 # Snake bite
 category: First aid
+tags: snake, ahas, kagat, venom, antivenom, splint
+disaster_types: accident
 source: CollapseAI Essentials (based on WHO snakebite first aid)
 
 1. Move away from the snake. Do not try to catch or kill it.
@@ -146,6 +163,8 @@ Note the time of the bite and what the snake looked like if it was safe to see.
 
 # Animal bites and rabies
 category: First aid
+tags: rabies, dog bite, aso, kagat, vaccine, animal bite center
+disaster_types: accident
 source: CollapseAI Essentials (based on WHO rabies guidance)
 
 Rabies is almost always fatal once symptoms start, but it is preventable with vaccine after a bite. Dogs and cats are the main source in the Philippines.

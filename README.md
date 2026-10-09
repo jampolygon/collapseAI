@@ -44,7 +44,7 @@ You need **[Node.js](https://nodejs.org)** (the LTS version) and **[Git](https:/
 ```bash
 git clone https://github.com/jampolygon/collapseAI.git
 cd collapseAI
-npm install
+npm ci
 npm run dev
 ```
 
@@ -69,9 +69,9 @@ npm run dev:phone
 | Branch | For | Main files |
 |---|---|---|
 | `main` | Working, demo-ready code only. Merge into it via pull requests | everything |
-| `frontend` | Screens, design, offline/PWA, tools (SOS, compass, map) | `src/views/`, `src/App.tsx`, `src/styles.css`, `public/sw.js` |
-| `backend` | Python: knowledge pack builder (Wikipedia etc.), LAN hub server | `scripts/`, `content/`, `hub/` (new) |
-| `ai` | Running the AI, search, prompts, model choice, speed tests | `src/lib/llm.ts`, `src/lib/ask.ts`, `src/lib/knowledge.ts`, `src/lib/catalog.ts` |
+| `frontend` | Screens, design, offline/PWA, tools (SOS, compass, map) | `frontend/src/views/`, `frontend/src/App.tsx`, `frontend/src/styles.css`, `frontend/public/sw.js` |
+| `backend` | Python: knowledge pack builder (Wikipedia etc.), LAN hub server | `backend/scripts/`, `backend/content/`, `backend/hub/` (new) |
+| `ai` | Running the AI, search, prompts, model choice, speed tests | `frontend/src/lib/llm.ts`, `frontend/src/lib/ask.ts`, `frontend/src/lib/knowledge.ts`, `frontend/src/lib/catalog.ts` |
 
 ```bash
 git checkout frontend        # switch to your branch
@@ -89,10 +89,12 @@ Then open a **pull request** into `main` on GitHub when something works. Merge `
 |---|---|
 | `npm run dev` | Run on your computer |
 | `npm run dev:phone` | Run with https so phones on your Wi-Fi can use it |
-| `npm run build` | Build the final website into `dist/` |
+| `npm run build` | Build the final website into `frontend/dist/` |
 | `npm run preview` | Run the final build (this is where offline mode works) |
 | `npm run typecheck` | Check the code for type errors |
-| `npm run packs` | Rebuild knowledge packs from `content/*.md` (needs Python) |
+| `npm test` | Run the tests (vitest) |
+| `npm run packs` | Rebuild knowledge packs from `backend/content/*.md` (Node — no Python needed) |
+| `npm run packs:check` | Fail if `frontend/public/packs/*.json` is out of date vs `backend/content/` (use in CI) |
 
 ### How it works
 
@@ -110,20 +112,59 @@ Download manager (pause/resume)           Search the downloaded packs → top 3 
 ### Where things are
 
 ```
-src/lib/catalog.ts     AI models, topic packs, kits  ← add models/packs here
-src/lib/device.ts      device check + which AI to recommend
-src/lib/downloads.ts   download manager (saved on the device, resumes after crashes)
-src/lib/llm.ts         runs the AI (wllama)
-src/lib/knowledge.ts   search + Tagalog keyword list  ← add words here
-src/lib/ask.ts         the instructions we give the AI
-src/views/             screens: Prepare, Survive (Ask, Library, Tools)
-content/*.md           the knowledge itself  ← write articles here
-scripts/build_packs.py turns content/*.md into public/packs/*.json
+frontend/src/lib/catalog.ts     AI models, topic packs, kits  ← add models/packs here
+frontend/src/lib/device.ts      device check + which AI to recommend
+frontend/src/lib/downloads.ts   download manager (saved on the device, resumes after crashes)
+frontend/src/lib/llm.ts         runs the AI (wllama)
+frontend/src/lib/knowledge.ts   search + Tagalog keyword list  ← add words here
+frontend/src/lib/ask.ts         the instructions we give the AI
+frontend/src/views/             screens: Prepare, Survive (Ask, Library, Tools)
+backend/content/*.md           the knowledge itself  ← write articles here
+backend/scripts/build_packs.py turns backend/content/*.md into frontend/public/packs/*.json
 PLAN.md                hackathon plan and priorities
 ```
 
-**Adding knowledge:** write in `content/*.md` (copy the style of the existing articles), then run `npm run packs`.
+**Adding knowledge:** write in `backend/content/*.md` (copy the style of the existing articles), then run `npm run packs`.
+
+The builder is `backend/scripts/build-packs.mjs` (zero dependencies, Node only — no Python needed).
+`backend/scripts/build_packs.py` is the original and produces the same JSON, if you prefer Python
+(`npm run packs:py`). Run `npm run packs:check` to fail if the checked-in packs are out of date.
+
+Per-article fields, all optional:
+
+| Field | Meaning |
+|---|---|
+| `category:` | shown in the Library and used as a search field |
+| `source:` | attribution shown with every citation |
+| `tags:` | comma-separated search hints, Tagalog included (`tags: bleeding, dugo, sugat`) |
+| `disaster_types:` | comma-separated types used to filter retrieval (`disaster_types: flood, typhoon`) |
+| `last_verified:` | ISO date the article was last checked. Set it once in the pack header to cover every article. |
 
 ### Putting it online
 
-Any static hosting works (Vercel, Netlify, Cloudflare Pages). Build command `npm run build`, output folder `dist`. The needed settings are already in `vercel.json` and `public/_headers`.
+Any static hosting works (Vercel, Netlify, Cloudflare Pages). Build command `npm run build`, output folder `frontend/dist`. The needed settings are already in `vercel.json` and `frontend/public/_headers`.
+
+
+### Repository layout
+
+```text
+frontend/             React + TypeScript PWA and browser AI
+  src/                screens, search, downloads, on-device inference
+  public/             service worker, manifest, icons, generated packs
+  package.json        frontend dependencies and Vite commands
+backend/              Python content tooling (no runtime API server yet)
+  content/            editable knowledge pack Markdown
+  scripts/            knowledge pack builder
+package.json          workspace commands; run npm commands here
+package-lock.json     shared dependency lockfile
+vercel.json           deploys frontend/dist from the repository root
+docs/SYSTEM_AUDIT.md   architecture, findings, and validation
+```
+
+Run `npm ci` once at the repository root. All commands above still work there.
+You can also run frontend commands from `frontend/`. The Python builder uses
+paths relative to its own file, so `python backend/scripts/build_packs.py` works
+from the root, and `python scripts/build_packs.py` works from `backend/`.
+Generated JSON stays in `frontend/public/packs/` for static hosting and offline use.
+See [backend/README.md](backend/README.md) for the content workflow and
+[docs/SYSTEM_AUDIT.md](docs/SYSTEM_AUDIT.md) for the initial system audit.

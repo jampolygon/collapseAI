@@ -160,7 +160,7 @@ export default function Prepare({ downloads, online, onGoSurvive }: Props) {
                 <input type="checkbox" checked={packIds.includes(p.id)} onChange={() => togglePack(p.id)} />
                 <span className="pack-icon">{p.icon}</span>
                 <span className="pack-body">
-                  <b>{p.name}</b> <span className="muted small">~{fmtMB(p.sizeMB)}</span>
+                  <b>{p.name}</b> <span className="muted small">{fmtMB(p.sizeMB)}</span>
                   {dl?.status === 'done' && <span className="badge ok">Downloaded</span>}
                   <br />
                   <span className="small muted">{p.blurb}</span>
