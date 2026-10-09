@@ -1,0 +1,61 @@
+name: Publish offline map release
+
+on:
+  workflow_dispatch:
+    inputs:
+      build_run_id:
+        description: Successful "Build offline map archive" workflow run ID whose Philippines map artifact was visually/offline tested
+        required: true
+        type: string
+
+permissions:
+  actions: read
+  contents: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install archive validation dependency
+        run: npm ci
+      - uses: actions/download-artifact@v4
+        with:
+          name: offline-map-release
+          path: ${{ runner.temp }}/offline-map-input
+          run-id: ${{ inputs.build_run_id }}
+          github-token: ${{ github.token }}
+      - name: Record source build provenance
+        id: provenance
+        run: |
+          source_url="$(cat "$RUNNER_TEMP/offline-map-input/source-url.txt")"
+          test "$source_url" = "https://build.protomaps.com/${source_url##*/}" || { echo "Invalid Protomaps source URL." >&2; exit 1; }
+          echo "source_url=$source_url" >> "$GITHUB_OUTPUT"
+      - name: Re-validate the archive and regenerate its exact manifest
+        run: |
+          node frontend/scripts/prepare-offline-map-release.mjs \
+            "$RUNNER_TEMP/offline-map-input/philippines.pmtiles" \
+            "$RUNNER_TEMP/offline-map-release" \
+            release
+      - name: Publish the verified archive and catalog
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: offline-maps-v1
+          target_commitish: ${{ github.sha }}
+          name: CollapseAI offline maps v1
+          body: |
+            Philippines-wide offline map archive extracted with PMTiles CLI from ${{ steps.provenance.outputs.source_url }}. Bounds: 116.8,4.4,126.8,21.3; zoom 0–13.
+
+            Release assets are `regions.json` and `philippines.pmtiles`. The catalog contains the archive byte size, SHA-256, bounds, center, checksum-bound revision, and schema metadata.
+
+            Attribution: © OpenStreetMap contributors. The map build includes Natural Earth, OSM-derived land/water polygons, and Daylight/ESA WorldCover landcover data; see the pinned Protomaps basemaps [data licenses](https://github.com/protomaps/basemaps/blob/42ffaaa4a85a41bfcb23e43cc0f5b492a5eca123/LICENSE_DATA.md) for source licenses and attribution details.
+          files: |
+            ${{ runner.temp }}/offline-map-release/regions.json
+            ${{ runner.temp }}/offline-map-release/philippines.pmtiles
+          fail_on_unmatched_files: true
+          overwrite_files: true
+          make_latest: false

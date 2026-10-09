@@ -1,0 +1,28 @@
+{
+  "version": 1,
+  "updatedAt": "2026-10-09T11:50:45.636Z",
+  "attribution": "© OpenStreetMap contributors",
+  "regions": [
+    {
+      "id": "philippines",
+      "name": "Philippines",
+      "province": "Philippines",
+      "pmtilesUrl": "./maps/philippines.pmtiles",
+      "sizeBytes": 158948759,
+      "sha256": "40c5cc3aa5371a3da97885cede966a6fa280d06ff71beb9e152a84859ebfe9cc",
+      "bounds": [
+        116.8,
+        4.4,
+        126.8,
+        21.3
+      ],
+      "center": [
+        121.8,
+        12.85
+      ],
+      "revision": "sha256-40c5cc3aa5371a3da97885cede966a6fa280d06ff71beb9e152a84859ebfe9cc",
+      "updatedAt": "2026-10-09T11:50:45.638Z",
+      "tileSchema": "protomaps-basemaps"
+    }
+  ]
+}

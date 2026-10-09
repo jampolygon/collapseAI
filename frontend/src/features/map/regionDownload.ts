@@ -1,4 +1,5 @@
 import { FileSource, PMTiles, TileType } from 'pmtiles';
+import { sha256 } from '@noble/hashes/sha256.js';
 import type { DownloadedMapRegion, MapRegion } from './mapTypes';
 import { MAX_MAP_ARCHIVE_BYTES } from './mapTypes';
 import { saveDownloadedRegion } from './offlineMapRepository';
@@ -15,8 +16,8 @@ export interface DownloadResult {
   persistentStorage: boolean;
 }
 
-function toHex(bytes: ArrayBuffer): string {
-  return Array.from(new Uint8Array(bytes), value => value.toString(16).padStart(2, '0')).join('');
+function toHex(bytes: Uint8Array): string {
+  return Array.from(bytes, value => value.toString(16).padStart(2, '0')).join('');
 }
 
 function vectorLayerIds(metadata: unknown): Set<string> {
@@ -30,11 +31,11 @@ function vectorLayerIds(metadata: unknown): Set<string> {
   ));
 }
 
-async function verifyArchive(region: MapRegion, blob: Blob, signal: AbortSignal): Promise<void> {
+async function verifyArchive(region: MapRegion, blob: Blob, signal: AbortSignal, digest: Uint8Array): Promise<void> {
   if (signal.aborted) throw new DOMException('Map download cancelled.', 'AbortError');
-  if (!crypto.subtle) throw new Error('This browser cannot verify map downloads. Open CollapseAI in a secure context (HTTPS) and retry.');
-  const actualHash = toHex(await crypto.subtle.digest('SHA-256', await blob.arrayBuffer()));
+  const actualHash = toHex(digest);
   if (actualHash !== region.sha256) throw new Error('Map verification failed: the SHA-256 checksum does not match.');
+  if (region.revision !== `sha256-${actualHash}`) throw new Error('Map verification failed: the catalog revision does not match the downloaded archive.');
 
   const file = new File([blob], `${region.id}.pmtiles`, { type: 'application/octet-stream' });
   const archive = new PMTiles(new FileSource(file));
@@ -47,9 +48,10 @@ async function verifyArchive(region: MapRegion, blob: Blob, signal: AbortSignal)
   if (header.specVersion !== 3 || header.tileType !== TileType.Mvt) {
     throw new Error('This map is not a supported PMTiles v3 vector archive.');
   }
+  if (header.numAddressedTiles <= 0) throw new Error('This PMTiles archive contains no map tiles.');
   const [west, south, east, north] = region.bounds;
-  if (header.minLon > west || header.minLat > south || header.maxLon < east || header.maxLat < north) {
-    throw new Error('The PMTiles archive bounds do not cover the published region bounds.');
+  if (header.minLon !== west || header.minLat !== south || header.maxLon !== east || header.maxLat !== north) {
+    throw new Error('The PMTiles archive bounds do not match the published region bounds.');
   }
   const layers = vectorLayerIds(await archive.getMetadata());
   const missing = REQUIRED_LAYERS.filter(layer => !layers.has(layer));
@@ -71,14 +73,26 @@ export async function downloadMapRegion(
 ): Promise<DownloadResult> {
   if (!navigator.onLine) throw new Error('Connect to the internet before downloading this map.');
   if (region.sizeBytes <= 0 || region.sizeBytes > MAX_MAP_ARCHIVE_BYTES) {
-    throw new Error('This map exceeds the supported 128 MB download limit.');
+    throw new Error('This map exceeds the supported 1 GiB download limit.');
   }
   const storage = await navigator.storage?.estimate?.();
   if (storage?.quota !== undefined && storage.usage !== undefined && storage.quota - storage.usage < region.sizeBytes) {
     throw new Error('There may not be enough browser storage for this map. Free space and try again.');
   }
   const persistentStorage = await hasPersistentStorage();
-  const response = await fetch(region.pmtilesUrl, { signal, mode: 'cors', cache: 'no-store' });
+  const timeout = AbortSignal.timeout(20 * 60_000);
+  const requestSignal = AbortSignal.any([signal, timeout]);
+  let response: Response;
+  try {
+    response = await fetch(region.pmtilesUrl, { signal: requestSignal, mode: 'cors', cache: 'no-store' });
+  } catch (error) {
+    if (signal.aborted) throw new DOMException('Map download cancelled.', 'AbortError');
+    if (timeout.aborted) throw new Error('Map download timed out. Check your connection and retry.');
+    throw new Error(`Could not reach the same-origin map release asset: ${error instanceof Error ? error.message : 'network error'}`);
+  }
+  if (response.status === 404) {
+    throw new Error(`Map release asset for ${region.name} (${region.id}) was not found (HTTP 404). The offline-maps-v1 release must include ${region.id}.pmtiles.`);
+  }
   if (!response.ok) throw new Error(`Map download failed (HTTP ${response.status}).`);
   const headerLength = Number(response.headers.get('content-length'));
   if (Number.isFinite(headerLength) && headerLength > 0 && headerLength !== region.sizeBytes) {
@@ -86,37 +100,48 @@ export async function downloadMapRegion(
   }
   const chunks: ArrayBuffer[] = [];
   let receivedBytes = 0;
+  const digest = sha256.create();
   const reader = response.body?.getReader();
-  if (reader) {
-    try {
-      while (true) {
-        if (signal.aborted) throw new DOMException('Map download cancelled.', 'AbortError');
-        const { done, value } = await reader.read();
-        if (done) break;
-        receivedBytes += value.byteLength;
-        if (receivedBytes > region.sizeBytes || receivedBytes > MAX_MAP_ARCHIVE_BYTES) {
-          await reader.cancel();
-          throw new Error('Map download stopped because it exceeded the published size limit.');
+  try {
+    if (reader) {
+      try {
+        while (true) {
+          if (signal.aborted) throw new DOMException('Map download cancelled.', 'AbortError');
+          if (timeout.aborted) throw new Error('Map download timed out. Check your connection and retry.');
+          const { done, value } = await reader.read();
+          if (done) break;
+          receivedBytes += value.byteLength;
+          if (receivedBytes > region.sizeBytes || receivedBytes > MAX_MAP_ARCHIVE_BYTES) {
+            await reader.cancel();
+            throw new Error('Map download stopped because it exceeded the published size limit.');
+          }
+          const chunk = new ArrayBuffer(value.byteLength);
+          new Uint8Array(chunk).set(value);
+          chunks.push(chunk);
+          digest.update(value);
+          onProgress({ receivedBytes, totalBytes: region.sizeBytes });
         }
-        const chunk = new ArrayBuffer(value.byteLength);
-        new Uint8Array(chunk).set(value);
-        chunks.push(chunk);
-        onProgress({ receivedBytes, totalBytes: region.sizeBytes });
+      } finally {
+        reader.releaseLock();
       }
-    } finally {
-      reader.releaseLock();
+    } else {
+      const bytes = new Uint8Array(await response.arrayBuffer());
+      receivedBytes = bytes.byteLength;
+      chunks.push(bytes.buffer);
+      digest.update(bytes);
+      onProgress({ receivedBytes, totalBytes: region.sizeBytes });
     }
-  } else {
-    const bytes = new Uint8Array(await response.arrayBuffer());
-    receivedBytes = bytes.byteLength;
-    chunks.push(bytes.buffer);
-    onProgress({ receivedBytes, totalBytes: region.sizeBytes });
+  } catch (error) {
+    if (signal.aborted) throw new DOMException('Map download cancelled.', 'AbortError');
+    if (timeout.aborted) throw new Error('Map download timed out. Check your connection and retry.');
+    throw error;
   }
   if (receivedBytes !== region.sizeBytes) {
     throw new Error(`Map download is incomplete (${receivedBytes} of ${region.sizeBytes} bytes).`);
   }
   const blob = new Blob(chunks, { type: 'application/vnd.pmtiles' });
-  await verifyArchive(region, blob, signal);
+  if (timeout.aborted) throw new Error('Map download timed out. Check your connection and retry.');
+  await verifyArchive(region, blob, signal, digest.digest());
   if (signal.aborted) throw new DOMException('Map download cancelled.', 'AbortError');
 
   const now = new Date().toISOString();
