@@ -173,5 +173,7 @@ test('monochrome text tokens meet contrast in both themes', () => {
   assert.match(css, /safe-area-inset-bottom/);
   assert.match(css, /button\s*\{[^}]*min-height:\s*44px/);
   assert.match(css, /\.icon-button\s*\{[^}]*width:\s*44px; height:\s*44px/);
-  assert.match(css, /\.turn \.a\s*\{[^}]*font-size:\s*16px/);
+  // answers must stay readable on phones: at least 16px (the text-size bump made it 17px)
+  const answerSize = Number(css.match(/\.turn \.a\s*\{[^}]*font-size:\s*(\d+)px/)?.[1]);
+  assert.ok(answerSize >= 16, `answer text is ${answerSize}px, expected at least 16px`);
 });
