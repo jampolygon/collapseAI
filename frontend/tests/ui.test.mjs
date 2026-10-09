@@ -56,7 +56,7 @@ test('sidebar appearance has only light and dark; loading has named skeletons', 
   assert.match(html, /<option value="light" selected="">Light theme/);
   assert.match(html, /<option value="dark">Dark theme/);
   assert.doesNotMatch(html, /System theme|value="system"/);
-  for (const label of ['Ask', 'Prepare', 'Library', 'Tools', 'Collapse sidebar']) assert.match(html, new RegExp(`aria-label="${label}"`));
+  for (const label of ['Ask', 'Prepare', 'Library', 'Tools', 'Map', 'Collapse sidebar']) assert.match(html, new RegExp(`aria-label="${label}"`));
   assert.match(html, /Checking your device/);
   assert.match(html, /skeleton-inline/);
   stored.clear();
@@ -110,6 +110,8 @@ test('Prepare exposes cache, model and knowledge independently, with real downlo
   ];
   const html = render(Prepare, { downloads, online: false, onGoSurvive: noop, modelName: null, system });
   assert.match(html, /App shell/);
+  assert.match(html, /role="status"/);
+  assert.match(html, /class="banner-label">Offline<\/span>/);
   assert.match(html, /Not cached/);
   assert.match(html, /Model file/);
   assert.match(html, /Not loaded/);
@@ -130,6 +132,17 @@ test('Library keeps search and both filters accessible without a model', async (
   assert.match(html, /All packs/);
   assert.match(html, /All categories/);
   assert.match(html, /Your library is empty/);
+});
+
+test('Library exposes only available offline content and its supplied provenance', () => {
+  const html = render(Library, { packs: [{
+    id: 'first-aid', name: 'First Aid', version: 1,
+    articles: [{ id: 'bleeding', title: 'Severe bleeding', category: 'First aid', text: 'Apply firm pressure.', source: 'WHO guide', last_verified: '2026-05-12' }],
+  }] });
+  assert.match(html, /Severe bleeding/);
+  assert.match(html, /Available offline/);
+  assert.match(html, /Source: WHO guide/);
+  assert.match(html, /Last verified: 2026-05-12/);
 });
 
 test('Tools preserve stored checklist keys, water result and SOS control', async () => {
@@ -158,4 +171,7 @@ test('monochrome text tokens meet contrast in both themes', () => {
   }
   assert.match(css, /prefers-reduced-motion/);
   assert.match(css, /safe-area-inset-bottom/);
+  assert.match(css, /button\s*\{[^}]*min-height:\s*44px/);
+  assert.match(css, /\.icon-button\s*\{[^}]*width:\s*44px; height:\s*44px/);
+  assert.match(css, /\.turn \.a\s*\{[^}]*font-size:\s*16px/);
 });

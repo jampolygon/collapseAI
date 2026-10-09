@@ -13,7 +13,17 @@ const isolation = {
 export default defineConfig(({ mode }) => ({
   plugins: [react(), ...(mode === 'phone' ? [basicSsl()] : [])],
   base: './',
-  server: { headers: isolation, host: true },
+  server: {
+    headers: isolation,
+    host: true,
+    proxy: {
+      '/offline-maps': {
+        target: 'https://github.com/jampolygon/collapseAI/releases/download/offline-maps-v1',
+        changeOrigin: true,
+        rewrite: path => path.replace(/^\/offline-maps/, ''),
+      },
+    },
+  },
   preview: { headers: isolation, host: true },
   optimizeDeps: { exclude: ['@wllama/wllama'] },
   build: { target: 'es2022', chunkSizeWarningLimit: 4000 },

@@ -119,7 +119,7 @@ frontend/src/lib/downloads.ts   download manager (saved on the device, resumes a
 frontend/src/lib/llm.ts         runs the AI (wllama)
 frontend/src/lib/knowledge.ts   search + Tagalog keyword list  ← add words here
 frontend/src/lib/ask.ts         the instructions we give the AI
-frontend/src/views/             screens: Prepare, Survive (Ask, Library, Tools)
+frontend/src/views/             screens: Prepare, Survive (Ask, Library, Tools, Map)
 backend/content/*.md           the knowledge itself  ← write articles here
 backend/scripts/build_packs.py turns backend/content/*.md into frontend/public/packs/*.json
 PLAN.md                hackathon plan and priorities
@@ -170,9 +170,37 @@ Generated JSON stays in `frontend/public/packs/` for static hosting and offline 
 See [backend/README.md](backend/README.md) for the content workflow and
 [docs/SYSTEM_AUDIT.md](docs/SYSTEM_AUDIT.md) for the initial system audit.
 
+### Offline maps
+
+The Map screen includes the offline map viewer, local GPS positioning, and prepared-region
+download/storage flow. Map archives are binary release assets and are not checked into the app.
+The current contract expects `regions.json` and a Metro Manila `.pmtiles` archive on the
+`offline-maps-v1` GitHub Release. The app accesses those files through same-origin `/offline-maps/`
+routes because GitHub Release assets do not permit browser CORS; Vite proxies this route in
+development and Vercel rewrites it in production. Each catalog entry must provide a real byte size, SHA-256,
+geographic bounds/center, revision, update date, and the `protomaps-basemaps` schema identifier.
+`pmtilesUrl` must use the matching same-origin route, such as
+`./offline-maps/metro-manila.pmtiles`; the matching release asset filename is
+`metro-manila.pmtiles`.
+Downloads are capped at 128 MB, validated as PMTiles v3 vector archives, and stored in IndexedDB.
+
+**No Metro Manila archive or release catalog has been published yet.** The Map screen will say
+so until the assets exist; do not fabricate catalog values or claim a region is ready offline.
+Emergency POIs are also intentionally empty pending a sourced, independently verified dataset.
+OSM attribution is displayed in the map. Offline routing, live conditions, arbitrary-area
+downloads, and saved places are not available.
+
+To publish coverage, build the PMTiles archive from permitted OSM source data using the matching
+Protomaps basemap schema, review attribution/licensing, calculate the exact file byte count and
+SHA-256, then attach both the archive and a matching `regions.json` manifest to the release.
+Test the deployed release proxy and airplane-mode map rendering on the target phone before
+announcing coverage. Never bulk-download tiles from `tile.openstreetmap.org`.
+Bundled Noto Sans glyphs and sprite artwork include their upstream OFL and MIT license notices
+under `frontend/public/map-assets/`.
+
 ### Frontend appearance
 
-The sidebar provides Ask, Prepare, Library, and Tools. Collapse it on desktop or
+The sidebar provides Ask, Prepare, Library, Tools, and Map. Collapse it on desktop or
 open it as a drawer on mobile. Floating labels identify collapsed icons on hover
 or keyboard focus. Light is the default; choose Light or Dark in the sidebar,
 and the choice is saved locally. Inter typography is bundled for offline use.

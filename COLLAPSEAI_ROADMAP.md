@@ -10,11 +10,11 @@ box in §14 below. Phase details live in the PR description.
 | Phase | Status | Notes |
 |---|---|---|
 | 0 — Foundation | ✅ done | `npm ci` installs; typecheck/build/test green. Pack builder ported to zero-dep Node (`scripts/build-packs.mjs`), so `npm run packs` no longer needs Python. Pack/article schema extended with `tags`, `disaster_types`, `last_verified`, `updated`. Pack sizes now measured from the built JSON instead of hard-coded. 57 tests. |
-| 1 — Foundation/design system | ☐ next | design tokens, primitives, motion, a11y baseline, versioned service worker |
-| 2 — UI overhaul | ☐ | |
+| 1 — Foundation/design system | 🟡 partial | Shared light/dark theme tokens, responsive app shell, reusable icons/statuses/skeletons, keyboard/focus behavior, reduced-motion rules, and read-only cache/storage reporting are implemented. Versioned service-worker lifecycle, broader design-system coverage, and production/offline verification remain. Motion and React Bits libraries were not added. |
+| 2 — UI overhaul | 🟡 in progress | Ask, Prepare, Library, and Tools have been substantially redesigned while retaining their existing handlers. The focused follow-up sets 44px button targets, 16px answer text, a labeled offline notice, and source/verification metadata where supplied. Browser checks at 320–430px found no horizontal overflow and kept the Ask composer visible. Broader accessibility review, tablet/desktop visual QA, and real model/offline scenarios remain unverified. |
 | 3 — AI/RAG | ☐ | |
 | 4 — Philippine emergency layer | ☐ | `tags`/`disaster_types` are in the schema and on the first-aid + disasters packs; remaining packs still need them |
-| 5 — Offline tools | ☐ | |
+| 5 — Offline tools | 🟡 partial | Offline map screen, prepared-region catalog contract, local style assets, GPS, verified download flow, and IndexedDB storage are implemented. Metro Manila archive/release catalog, verified emergency POIs, and real-device airplane-mode testing remain. |
 | 6 — Reliability | ☐ | |
 | 7 — Polish | ☐ | |
 
@@ -148,6 +148,15 @@ Expand the existing tools area into a real emergency toolkit.
 ## E. Offline maps and navigation
 
 Research and implement an offline-first map system using open data where licensing permits.
+
+**Implementation status:** the Map navigation, local MapLibre/PMTiles renderer, region selection,
+GPS permission flow, archive verification and IndexedDB storage are in place. The app accesses
+`regions.json` and the Metro Manila PMTiles file on the `offline-maps-v1` GitHub Release through a
+same-origin proxy because browser CORS blocks direct GitHub Release asset requests;
+that release and its real archive have not been published, so the UI must continue to report that
+coverage as unavailable until the catalog contains verified metadata. Emergency POIs remain empty
+until sourced and verified. Offline routing, arbitrary-area downloads, live hazards, and saved
+locations are not implemented.
 
 Potential capabilities:
 - Download map regions before an emergency
@@ -474,21 +483,25 @@ Priorities:
 # 14. Development Priority
 
 ## Phase 1 — Foundation
-- [ ] Audit existing CollapseAI code
-- [ ] Preserve working offline AI/RAG
-- [ ] Establish design system
+- [x] Audit existing CollapseAI code
+- [x] Preserve working offline AI/RAG
+- [x] Establish the initial shared frontend foundation (theme tokens, shell, reusable UI/accessibility patterns)
 - [ ] Install design-agent skills
 - [ ] Add Motion for React
 - [ ] Add selected React Bits components
+- [ ] Version and verify the service-worker lifecycle
+- [ ] Complete production/offline verification
 
 ## Phase 2 — UI overhaul
-- [ ] Prepare Mode redesign
-- [ ] Survive Mode redesign
-- [ ] AI conversation redesign
-- [ ] Library redesign
-- [ ] Tools redesign
+- [x] Prepare Mode redesign (initial pass)
+- [x] Survive Mode redesign (initial pass)
+- [x] AI conversation redesign (initial pass)
+- [x] Library redesign (initial pass)
+- [x] Tools redesign (initial pass)
 - [ ] Responsive/mobile pass
 - [ ] Accessibility pass
+- [ ] Complete tablet/desktop and device-based QA
+- [ ] Verify long answers, loaded-model, offline, and error states in browser/device
 
 ## Phase 3 — AI/RAG
 - [ ] Improve retrieval
@@ -506,10 +519,13 @@ Priorities:
 - [ ] Source/update metadata
 
 ## Phase 5 — Offline tools
-- [ ] Offline maps
+- [x] Offline map browsing and local map archive flow (Metro Manila release data still unpublished)
+- [x] Device location and manual region selection
+- [ ] Publish and validate the Metro Manila PMTiles archive and `regions.json` catalog
+- [ ] Source and independently verify emergency-location POIs
+- [ ] Validate offline rendering on target mobile devices in airplane mode
 - [ ] Offline routing
 - [ ] Compass
-- [ ] Location
 - [ ] Emergency toolkit
 - [ ] Preparedness checklists
 

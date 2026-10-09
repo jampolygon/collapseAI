@@ -11,7 +11,7 @@ export default function Tools() {
       <WaterCalc />
       <GoBag />
       </div>
-      <div className="planned-tools"><Icon name="compass" size={18} /><span>Compass &amp; offline map</span><span className="muted tiny">Planned · not yet available</span></div>
+      <div className="planned-tools"><Icon name="compass" size={18} /><span>Offline map</span><span className="muted tiny">Open Map from the navigation to download a prepared region.</span></div>
     </div>
   );
 }

@@ -92,7 +92,7 @@ export default function Prepare({ downloads, online, onGoSurvive, system, modelN
     <div className="page-content prepare-page">
       <header className="page-intro"><span className="eyebrow">Prepare / System setup</span><h2>Set up for offline use.</h2><p>Download your model and knowledge while you have a connection.<br />Keep track of what is stored, cached, and actually loaded.</p></header>
       {!online && (
-        <div className="banner warn"><Icon name="info" size={18} />You are offline. Connection errors will retry when the network returns. Paused downloads need Resume.</div>
+        <div className="banner warn" role="status"><Icon name="info" size={18} /><span className="banner-label">Offline</span><span>Connection errors will retry when the network returns. Paused downloads need Resume.</span></div>
       )}
       <div className="setup-layout"><div className="setup-sections">
       {/* ---------- Device ---------- */}
