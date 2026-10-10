@@ -97,7 +97,7 @@ export default function Compass() {
       </header>
       <div className="tools-grid">
         <section className="tool-section compass-tool">
-          <div className="tool-heading"><Icon name="needle" size={22} /><span className="eyebrow">01 / Heading</span></div>
+          <div className="tool-heading"><Icon name="needle" size={22} /><span className="eyebrow">Heading</span></div>
           <svg viewBox="0 0 200 200" className="compass" role="img" aria-label={dir !== null ? `Heading ${Math.round(h)} degrees ${cardinal(h)}` : 'Compass'}>
             <g className="compass-rose" style={{ transform: `rotate(${-h}deg)` }}>
               <circle cx="100" cy="100" r="92" className="dial" />
@@ -126,7 +126,7 @@ export default function Compass() {
         </section>
 
         <section className="tool-section">
-          <div className="tool-heading"><Icon name="pin" size={22} /><span className="eyebrow">02 / Go to a place</span></div>
+          <div className="tool-heading"><Icon name="pin" size={22} /><span className="eyebrow">Go to a place</span></div>
           <h3>Saved places</h3>
           {places.length === 0 ? (
             <p className="muted small">No places yet. Stand at home, your evacuation center or a water source and save it below.</p>
@@ -172,7 +172,7 @@ export default function Compass() {
         </section>
 
         <section className="tool-section">
-          <div className="tool-heading"><Icon name="sun" size={22} /><span className="eyebrow">03 / Sun direction</span></div>
+          <div className="tool-heading"><Icon name="sun" size={22} /><span className="eyebrow">Sun direction</span></div>
           <h3>Direction from the sun</h3>
           {sun ? (
             <p className="small">

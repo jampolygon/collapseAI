@@ -67,13 +67,35 @@ test('startup defaults to light, migrates system preference, and preserves expli
 test('sidebar appearance has only light and dark; loading has named skeletons', () => {
   stored.set('cai.theme', 'system');
   const html = render(App);
-  assert.match(html, /<option value="light" selected="">Light theme/);
-  assert.match(html, /<option value="dark">Dark theme/);
-  assert.doesNotMatch(html, /System theme|value="system"/);
+  assert.match(html, /<button type="button" class="theme-control" aria-label="Switch to dark theme"/);
+  assert.match(html, /class="theme-label">Light<\/span>/);
+  assert.doesNotMatch(html, /<select[^>]*aria-label="Appearance"|Light theme|Dark theme|System theme|value="system"/);
   for (const label of ['Ask', 'Prepare', 'Library', 'Tools', 'Map', 'Collapse sidebar']) assert.match(html, new RegExp(`aria-label="${label}"`));
   assert.match(html, /Checking your device/);
   assert.match(html, /skeleton-inline/);
   stored.clear();
+});
+
+test('sidebar renders the persisted dark preference as a button without a dropdown', () => {
+  stored.set('cai.theme', 'dark');
+  stored.set('cai.sidebar.collapsed', 'true');
+  try {
+    const html = render(App);
+    assert.match(html, /sidebar-collapsed/);
+    assert.match(html, /<button type="button" class="theme-control" aria-label="Switch to light theme"/);
+    assert.match(html, /class="theme-label">Dark<\/span>/);
+    assert.doesNotMatch(html, /<select[^>]*aria-label="Appearance"|Light theme|Dark theme/);
+  } finally { stored.clear(); }
+});
+
+test('section headings render without decorative numbers while instructional lists remain numbered', () => {
+  const system = { appCache: 'missing', engineCache: 'missing', storage: null, cacheError: null };
+  const html = render(Tools) + render(Compass) + render(Prepare, { downloads: [], online: true, onGoSurvive: noop, modelName: null, system });
+  for (const label of ['Signaling', 'Water treatment', 'Preparedness', 'Testing', 'Heading', 'Go to a place', 'Sun direction']) {
+    assert.match(html, new RegExp(`class="eyebrow">${label}<`));
+  }
+  assert.doesNotMatch(html, /0[1-9]\s*\/|class="step"/);
+  assert.match(render(RichText, { text: '1. Take cover.\n2. Hold on.' }), /<ol start="1">/);
 });
 
 test('skeletons communicate loading without inventing download progress', () => {
@@ -143,6 +165,8 @@ test('Prepare exposes cache, model and knowledge independently, with real downlo
 test('Library keeps search and both filters accessible without a model', async () => {
   const html = render(Library, { packs: [] });
   assert.match(html, /Search downloaded knowledge/);
+  assert.match(html, /placeholder="Search offline knowledge"/);
+  assert.doesNotMatch(html, /try paso, flood, water/);
   assert.match(html, /All packs/);
   assert.match(html, /All categories/);
   assert.match(html, /Your library is empty/);
@@ -157,6 +181,31 @@ test('Library exposes only available offline content and its supplied provenance
   assert.match(html, /Available offline/);
   assert.match(html, /Source: WHO guide/);
   assert.match(html, /Last verified: 2026-05-12/);
+});
+
+for (const theme of ['light', 'dark']) test(`modified screens retain semantic controls and reference disclosure with ${theme} preference`, () => {
+  stored.set('cai.theme', theme);
+  stored.set('cai.chats.current', 'ui-fixture');
+  stored.set('cai.chats.v1', JSON.stringify([{
+    id: 'ui-fixture', title: 'Emergency guidance', updated: 1,
+    turns: [{ q: 'What should I do?', a: 'Take cover.', kind: 'answer', sources: [{
+      id: 'disasters/earthquake#0', packId: 'disasters', articleId: 'earthquake',
+      title: 'Earthquake safety', category: 'Disasters', text: 'Drop, Cover, and Hold On.',
+    }] }],
+  }]));
+  try {
+    const app = render(App);
+    assert.match(app, new RegExp(`aria-label="Switch to ${theme === 'light' ? 'dark' : 'light'} theme"`));
+    const ask = render(Ask, { downloads: [], onModelChange: noop, onGoPrepare: noop });
+    assert.match(ask, /class="assistant-label"/);
+    assert.match(ask, /<details class="sources" open=""><summary>Retrieved references/);
+    assert.match(ask, /Earthquake safety/);
+    assert.match(ask, /class="composer-area"/);
+    assert.match(ask, /<label class="sr-only" for="question">Your question/);
+    assert.match(ask, /aria-label="Send question"/);
+    assert.match(render(Library, { packs: [] }), /placeholder="Search offline knowledge"/);
+    assert.match(render(Tools), /class="eyebrow">Signaling/);
+  } finally { stored.clear(); }
 });
 
 test('Tools preserve stored checklist keys, water result and SOS control', async () => {
@@ -181,10 +230,13 @@ test('monochrome text tokens meet contrast in both themes', () => {
   for (const tokenBlock of css.matchAll(/:root(?:\[data-theme='dark'\])?\s*\{([\s\S]*?)\}/g)) {
     const tokens = Object.fromEntries([...tokenBlock[1].matchAll(/--([\w-]+):\s*(#[\da-f]+)/g)].map(match => [match[1], match[2]]));
     for (const text of ['text', 'muted', 'subtle']) for (const bg of ['bg', 'surface', 'raised']) assert.ok(ratio(tokens[text], tokens[bg]) >= 4.5, `${text} on ${bg}: ${ratio(tokens[text], tokens[bg])}`);
+    for (const text of ['text', 'muted']) assert.ok(ratio(tokens[text], tokens.hover) >= 4.5, `${text} on hover`);
+    for (const bg of ['bg', 'surface', 'raised']) assert.ok(ratio(tokens.contrast, tokens[bg]) >= 3, `focus outline on ${bg}`);
     assert.ok(ratio(tokens.contrast, tokens['contrast-text']) >= 7);
   }
   assert.match(css, /prefers-reduced-motion/);
   assert.match(css, /safe-area-inset-bottom/);
+  assert.match(css, /\.theme-control:focus-visible/);
   assert.match(css, /button\s*\{[^}]*min-height:\s*44px/);
   assert.match(css, /\.icon-button\s*\{[^}]*width:\s*44px; height:\s*44px/);
   // answers must stay readable on phones: at least 16px (the text-size bump made it 17px)

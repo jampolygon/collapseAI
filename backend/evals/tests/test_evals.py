@@ -103,7 +103,8 @@ class InputTests(unittest.TestCase):
 
     def test_prompt_extraction_tracks_frontend_and_rejects_interpolation(self):
         system = benchmark.production_prompt(run_eval.ROOT / "frontend/src/lib/ask.ts")
-        self.assertIn("Always answer in English", system)
+        self.assertIn("For English questions, answer in English", system)
+        self.assertIn("prefer concise, natural Taglish", system)
         self.assertIn("present emergency", system)
         self.assertNotIn("${PERSONA}", system)
         self.assertIn("None of the downloaded survival guides", benchmark.production_prompt(run_eval.ROOT / "frontend/src/lib/ask.ts", "GENERAL"))

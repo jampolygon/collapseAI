@@ -47,7 +47,7 @@ export default function Bench({ onModelChange }: { onModelChange?: () => void })
 
   return (
     <section className="tool-section bench-tool">
-      <div className="tool-heading"><Icon name="cpu" size={22} /><span className="eyebrow">04 / Testing</span></div>
+      <div className="tool-heading"><Icon name="cpu" size={22} /><span className="eyebrow">Testing</span></div>
       <h3>AI benchmark</h3>
       <p className="muted small">
         Asks {QUESTIONS.length} survival questions and checks whether each answer has the key facts. Run it on each phone to pick the best AI. Takes a few minutes per model.

@@ -67,6 +67,31 @@ describe('search relevance (real packs)', () => {
 });
 
 describe('production prompt construction without inference', () => {
+  it('directs both grounded and general answers to lead with actions instead of context validation', () => {
+    const question = 'may lindol at walang kuryente, ano muna ang dapat naming gawin';
+    for (const sources of [retrieve(question), []]) {
+      const system = buildMessages(question, sources)[0].content;
+      expect(system).toContain("Answer the user's question directly");
+      expect(system).toContain('lead with the immediate safe action or priority');
+      expect(system).toContain('Never acknowledge retrieved context as if the user supplied it');
+      expect(system).toContain('Do not describe or summarize the retrieval process');
+      expect(system).toContain('Do not open with agreement, praise or validation');
+      expect(system).not.toMatch(/Yes, that is correct|start with one short, human sentence|Good idea|Based on the above information/i);
+      expect(system).not.toContain(question); // No question-specific canned instructions.
+    }
+    expect(buildMessages(question, retrieve(question))[0].content).toContain('Do not invent facts beyond these references');
+    expect(buildMessages(question, retrieve(question))[0].content).toContain('preserve uncertainty');
+  });
+  it('prefers simple Taglish where reliable and English for English questions', () => {
+    for (const question of ['paano gamutin ang sugat', 'How do I stop heavy bleeding?']) {
+      const system = buildMessages(question, retrieve(question))[0].content;
+      expect(system).toContain('For English questions, answer in English');
+      expect(system).toContain('For clearly Filipino or Taglish questions, prefer concise, natural Taglish');
+      expect(system).toContain('familiar English emergency terms');
+      expect(system).toContain('Use English if translating would make the guidance less accurate');
+      expect(system).not.toContain('Always answer in English');
+    }
+  });
   it('grounds the current emergency in the filtered references instead of summarizing history', () => {
     const question = 'may lindol at walang kuryente. ano muna ang dapat naming gawin';
     const sources = retrieve(question);

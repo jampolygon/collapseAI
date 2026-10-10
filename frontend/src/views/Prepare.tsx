@@ -115,7 +115,7 @@ export default function Prepare({ downloads, online, onGoSurvive, system, modelN
 
       {/* ---------- Step 1: model ---------- */}
       <section className="setup-section">
-        <div className="section-heading"><h3><span className="step">01</span> Local model</h3><span className="muted tiny">One model runs at a time</span></div>
+        <div className="section-heading"><h3>Local model</h3><span className="muted tiny">One model runs at a time</span></div>
         {rec && (
           <p className="muted">
             We recommend <b>{rec.model.name}</b>. {rec.reason}
@@ -149,7 +149,7 @@ export default function Prepare({ downloads, online, onGoSurvive, system, modelN
 
       {/* ---------- Step 2: knowledge ---------- */}
       <section className="setup-section">
-        <div className="section-heading"><h3><span className="step">02</span> Knowledge packs</h3><span className="muted tiny">Choose a kit or select topics</span></div>
+        <div className="section-heading"><h3>Knowledge packs</h3><span className="muted tiny">Choose a kit or select topics</span></div>
         <div className="kits">
           {KITS.map((k) => (
             <button key={k.id} aria-pressed={kitId === k.id} className={`kit ${kitId === k.id ? 'selected' : ''}`} onClick={() => chooseKit(k.id)}>
@@ -184,7 +184,7 @@ export default function Prepare({ downloads, online, onGoSurvive, system, modelN
 
       {/* ---------- Step 3: download ---------- */}
       <section className="setup-section download-section">
-        <div className="section-heading"><h3><span className="step">03</span> Downloads</h3></div>
+        <div className="section-heading"><h3>Downloads</h3></div>
         <button className="primary big" disabled={nothingToDo} onClick={downloadAll}>
           <Icon name={selectedFinished ? 'check' : 'download'} size={18} />{nothingToDo ? (selectedFinished ? 'Selected files downloaded' : busy ? 'Downloads in progress' : 'Checking selected files') : `Download selected · ~${fmtMB(totalMB)}`}
         </button>

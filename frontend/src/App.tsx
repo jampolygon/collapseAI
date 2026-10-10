@@ -6,10 +6,11 @@ import Prepare from './views/Prepare';
 import Survive, { type Tab } from './views/Survive';
 import { Icon, type IconName } from './components/Icon';
 import { Status } from './components/Status';
-import { useTheme, useMobile, type Theme } from './ui/theme';
+import { useTheme, useMobile } from './ui/theme';
 import { useSystemSnapshot } from './ui/system';
 import { Tooltip } from './components/Tooltip';
 import { InstallPrompt } from './components/Install';
+import { ThemeToggle } from './components/ThemeToggle';
 
 type Mode = 'prepare' | 'survive';
 
@@ -94,7 +95,7 @@ export default function App() {
         </nav>
         <div className="sidebar-bottom">
           <div className="local-note"><Icon name="cpu" size={18} /><div><span>Local processing</span><small>Models run on this device.</small></div></div>
-          <Tooltip label="Appearance" disabled={!collapsed || mobile}><label className="theme-control"><Icon name={theme === 'dark' ? 'moon' : 'sun'} size={18} /><span className="sr-only">Appearance</span><select aria-label="Appearance" value={theme} onChange={event => setTheme(event.target.value as Theme)}><option value="light">Light theme</option><option value="dark">Dark theme</option></select></label></Tooltip>
+          <Tooltip label={`Switch to ${theme === 'light' ? 'dark' : 'light'} theme`} disabled={!collapsed || mobile}><ThemeToggle theme={theme} onChange={setTheme} /></Tooltip>
           {!mobile && <Tooltip label="Expand sidebar" disabled={!collapsed}><button className="sidebar-toggle" aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'} aria-expanded={!collapsed} onClick={() => setCollapsed(!collapsed)}><Icon name="panel" size={18} /><span>Collapse sidebar</span></button></Tooltip>}
         </div>
       </aside>

@@ -81,7 +81,7 @@ function SOS() {
 
   return (
     <section className="tool-section sos-tool">
-      <div className="tool-heading"><Icon name="flashlight" size={22} /><span className="eyebrow">01 / Signaling</span></div><h3>SOS signal</h3>
+      <div className="tool-heading"><Icon name="flashlight" size={22} /><span className="eyebrow">Signaling</span></div><h3>SOS signal</h3>
       <p className="muted small">Flashes S-O-S in Morse code with the flashlight or screen.</p>
       <div className="morse-preview mono" aria-label="SOS: three short, three long, three short">··· <span>———</span> ···</div>
       <button className={running ? 'danger big' : 'primary big'} onClick={() => setRunning(!running)}>
@@ -106,7 +106,7 @@ function WaterCalc() {
   const drops = Math.ceil((liters / 3.785) * perGallon * (cloudy ? 2 : 1));
   return (
     <section className="tool-section water-tool">
-      <div className="tool-heading"><Icon name="water" size={22} /><span className="eyebrow">02 / Water treatment</span></div><h3>Water purification</h3><p className="muted small">Enter your water volume and bleach strength.</p>
+      <div className="tool-heading"><Icon name="water" size={22} /><span className="eyebrow">Water treatment</span></div><h3>Water purification</h3><p className="muted small">Enter your water volume and bleach strength.</p>
       <div className="form-row">
         <label>
           Water (liters)
@@ -156,7 +156,7 @@ function GoBag() {
   const toggle = (item: string) => setChecked(checked.includes(item) ? checked.filter((c) => c !== item) : [...checked, item]);
   return (
     <section className="tool-section gobag-tool">
-      <div className="tool-heading"><Icon name="bag" size={22} /><span className="eyebrow">03 / Preparedness</span></div><div className="section-heading"><h3>72-hour go-bag</h3>
+      <div className="tool-heading"><Icon name="bag" size={22} /><span className="eyebrow">Preparedness</span></div><div className="section-heading"><h3>72-hour go-bag</h3>
         <span className="muted small mono">
           {checked.length}/{GOBAG.length}
         </span>
