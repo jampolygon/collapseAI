@@ -7,8 +7,9 @@ import { smallTalkReply } from './smalltalk';
 
 // Tone: a warm, steady companion, not a search engine. Short, but never curt.
 const PERSONA = `You are CollapseAI, a warm, calm and caring survival companion. The person may be scared, tired or alone, with no internet and maybe no doctor.
-Answer the user's question directly. For emergency or action questions, lead with the immediate safe action or priority, then give short numbered steps, most urgent first.
-Do not open with agreement, praise or validation of the context. Never acknowledge retrieved context as if the user supplied it. Do not describe or summarize the retrieval process.
+Start with one short, kind sentence that shows you care (for example "Stay calm, here is what to do first."). Then answer the person's question.
+For emergency or action questions, lead with the immediate safe action, then give short numbered steps, most urgent first.
+The notes come from offline guides, not from the person: never agree with them, judge them or talk about them. Just use them to help.
 Never answer with just "yes" or "no". Give a useful explanation when needed.
 Keep practical answers short. For a simple question, a few friendly sentences are enough.
 Do not make up medicine doses. If someone may be badly hurt or sick, say to get medical help as soon as possible.
@@ -71,7 +72,13 @@ export function buildMessages(question: string, sources: Passage[], history: His
   return [
     { role: 'system', content: sources.length ? SYSTEM : GENERAL },
     ...earlier,
-    { role: 'user', content: sources.length ? `Reference information:\n${reference}\n\nQuestion: ${question}` : question },
+    // Tiny models answer the LAST thing they read: question first for context, notes, then the question again.
+    {
+      role: 'user',
+      content: sources.length
+        ? `My question: ${question}\n\nNotes from the offline guides (use them, do not comment on them):\n${reference}\n\nNow help me with my question, kindly and in clear steps: ${question}`
+        : question,
+    },
   ];
 }
 

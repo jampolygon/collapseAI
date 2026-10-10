@@ -71,12 +71,10 @@ describe('production prompt construction without inference', () => {
     const question = 'may lindol at walang kuryente, ano muna ang dapat naming gawin';
     for (const sources of [retrieve(question), []]) {
       const system = buildMessages(question, sources)[0].content;
-      expect(system).toContain("Answer the user's question directly");
-      expect(system).toContain('lead with the immediate safe action or priority');
-      expect(system).toContain('Never acknowledge retrieved context as if the user supplied it');
-      expect(system).toContain('Do not describe or summarize the retrieval process');
-      expect(system).toContain('Do not open with agreement, praise or validation');
-      expect(system).not.toMatch(/Yes, that is correct|start with one short, human sentence|Good idea|Based on the above information/i);
+      expect(system).toContain('one short, kind sentence that shows you care');
+      expect(system).toContain('lead with the immediate safe action');
+      expect(system).toContain('never agree with them, judge them or talk about them');
+      expect(system).not.toMatch(/Yes, that is correct|Good idea|Based on the above information/i);
       expect(system).not.toContain(question); // No question-specific canned instructions.
     }
     expect(buildMessages(question, retrieve(question))[0].content).toContain('Do not invent facts beyond these references');
