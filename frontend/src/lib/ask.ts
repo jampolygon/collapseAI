@@ -44,6 +44,10 @@ const HISTORY_TURNS = 2; // small on purpose: every extra token slows the phone'
 const HISTORY_ANSWER_CHARS = 200;
 const NOTE_CHARS = 450; // about 110 tokens per note
 
+// Small phone models (under 1B) get 2 notes: faster to read and less to confuse them. Bigger ones get 3.
+const SMALL_MODELS = new Set(['smollm2-360m', 'qwen35-0.8b', 'lfm25-350m', 'lfm25-350m-q8', 'gemma3-270m']);
+const noteCount = () => (SMALL_MODELS.has(loadedModel()?.id ?? '') ? 2 : 3);
+
 /** Cut at a sentence or line end near `max` characters. */
 function clip(text: string, max: number): string {
   if (text.length <= max) return text;
@@ -111,7 +115,7 @@ export async function ask(
 
   // Small context on purpose: on weak phone CPUs, reading the prompt is the slow part.
   const history = (cb.history ?? []).slice(-HISTORY_TURNS);
-  const sources = retrieve(question, history);
+  const sources = retrieve(question, history, noteCount());
   cb.onSources(sources);
   if (!sources.length) {
     if (!loadedModel()) {
