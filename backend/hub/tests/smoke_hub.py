@@ -46,7 +46,10 @@ def main():
                 assert health["status"] == "degraded" and health["hub"]["available"]
                 with urlopen(f"{base}/api/info", timeout=4) as response:
                     info = json.load(response)
-                assert len(info["packs"]) == 6 and all(pack["available"] for pack in info["packs"])
+                manifest = json.loads((ROOT / "frontend/public/manifest.json").read_text(encoding="utf-8"))
+                expected_pack_ids = {pack["id"] for pack in manifest["packs"]}
+                assert {pack["id"] for pack in info["packs"]} == expected_pack_ids
+                assert all(pack["available"] for pack in info["packs"])
                 assert not any(item["available"] for item in info["maps"])
                 with urlopen(f"{base}/packs/first-aid.json", timeout=4) as response:
                     assert response.read() == (ROOT / "frontend/public/packs/first-aid.json").read_bytes()
@@ -67,7 +70,7 @@ def main():
                 except HTTPError as exc:
                     assert exc.code == 503
                     exc.close()
-                print("Real Uvicorn HTTP smoke passed: degraded health, 6 manifest packs, full/range pack transfer, missing maps/models, AI 503.")
+                print(f"Real Uvicorn HTTP smoke passed: degraded health, {len(expected_pack_ids)} manifest packs, full/range pack transfer, missing maps/models, AI 503.")
             finally:
                 process.terminate()
                 try:

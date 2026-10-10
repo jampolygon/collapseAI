@@ -83,17 +83,24 @@ older server manually and use `--server`. Startup logs accompany reports.
 
 ## Prompt and inference settings
 
-The system prompt is read **directly from `const SYSTEM` in
-`frontend/src/lib/ask.ts` on every run**. Edit that location to change both the
-production prompt and the harness's next run. The extractor accepts only a plain
-template literal and fails clearly if interpolation/escapes are introduced.
+The grounded and general-knowledge prompts are read **directly from `SYSTEM`
+and `GENERAL` in `frontend/src/lib/ask.ts` on every run**, resolving their shared
+`PERSONA`. The extractor supports template literals, basic literal escapes and
+bare `${NAME}` references to other template constants. It does not execute
+TypeScript. Missing/duplicate constants, cycles, function/property expressions,
+unsupported escapes and concatenation outside templates fail clearly. Changes
+to the supported prompt structure require updating the extractor/tests.
 
 For an eval-only experiment, use `--prompt backend/evals/my_prompt.txt` with a
 UTF-8 text file. It overrides only the system message, not the frontend. There is
-no separately maintained copy of the system prompt. The reference wrapper and
-empty-reference fallback are small, documented duplicates in
-`benchmark.py:build_messages`; update those if Ask's user-message format changes.
-Questions are independent messages, as in the current Ask implementation.
+no separately maintained copy of the system prompt. The reference wrapper is a
+small, documented duplicate in `benchmark.py:build_messages`;
+update it if the frontend `buildMessages` format changes. Matching references use
+`SYSTEM`; no references (or `--no-rag`) use the current `GENERAL` and the plain
+question, just like the browser's no-reference inference branch. A custom prompt
+overrides both system-message choices. Questions are independent: unlike the
+browser, the harness does not replay the previous two conversation turns or run
+canned greeting/location replies.
 
 Defaults: temperature **0**, seed **42**, generated-token limit **400**. Use
 `--temperature 0.3` to match the frontend sampling temperature. Deterministic
@@ -121,25 +128,34 @@ python backend/evals/run_eval.py --server http://127.0.0.1:8080 --pack-ids first
 ```
 
 RAG loads generated files from `frontend/public/packs/`. `--no-rag` skips packs
-and sends just the question with the **same** system prompt. That prompt still
-asks for source-grounded answers, so raw-model refusals are expected and should
-be reviewed rather than treated as a generic model-knowledge leaderboard.
+and sends the question with production `GENERAL` (unless `--prompt` overrides it).
 There is no extra refusal/safety instruction added specifically for trap questions.
 
 The Python retriever is **an approximation, not MiniSearch parity**:
 
-- It reads the production `TAGLISH` dictionary directly from `knowledge.ts`.
-  Unsupported dictionary syntax fails clearly instead of using a stale copy.
+- It reads the production `TAGLISH` dictionary and `STOP` string set directly
+  from `knowledge.ts`. Unsupported syntax fails clearly.
 - It mirrors paragraph chunking, the 600-character threshold, UTF-16 length
-  counting, passage IDs, title/category/text fields, and 3 / 1.5 / 1 boosts.
+  counting, passage IDs, metadata and title/category/text/tags fields with
+  3 / 1.5 / 1 / 2 boosts. Plural stemming and query-stopword removal are mirrored.
   Long paragraphs stay long, matching the current browser behavior.
 - It uses Unicode alphanumeric tokens, independent per-field BM25 with
   `k1=1.2`, `b=0.75`, and OR accumulation. This differs from MiniSearch's indexing,
   BM25 variant, term combination, tokenizer, normalization, and scoring.
 - Prefix matches have weight 0.8; edit-distance matches have weight 0.6 and a
-  floor(length x 0.15) allowance. These expansion weights/fuzzy details differ
+  floor(length x 0.2) allowance for words of at least six characters; prefixes
+  require at least five characters. These expansion weights/fuzzy details differ
   from MiniSearch. Duplicate expanded query terms are deduplicated.
-- Equal scores use input order. Default pack order is alphabetical, whereas
+- Action queries exclude historical event passages, prefer procedural team
+  guides, downweight non-procedural encyclopedia background, and use disaster
+  metadata only with corroborating title/tag terms. The mirrored relative cutoff
+  is 0.55, and each returned hit must meet the absolute floor (2.4 × ln(passage
+  count), zero for fewer than 20 passages). Top-k is a maximum, not a required count.
+  These small heuristic constants/patterns are mirrored, not executed from TS;
+  the real-pack regressions guard their intended behavior. Numeric scores and
+  sometimes the exact selected passages differ because BM25 normalization is
+  still approximate. `python-bm25-approx-v2` identifies this policy in reports.
+- Equal scores use passage IDs. Default pack order is alphabetical, whereas
   the frontend follows catalog order and indexes only device-downloaded packs.
   Use `--pack-ids` to match a device's selection and order more closely.
 
@@ -228,6 +244,6 @@ They cover malformed questions/packs/responses, timeout, continuation, output
 tables, source IDs, prompt extraction, no-RAG messages, unavailable servers,
 occupied ports, cleanup escalation, and interrupted partial reports. They do
 not exercise a real GGUF or certify Windows llama-server signal handling.
-No local server/model was found during implementation, so real inference and
-native model startup were not tested. No Python type checker is configured in
+Protocol tests use mocked/synthetic servers; they do not prove native GGUF
+inference, real phone answer quality or model performance. No Python type checker is configured in
 the repository; syntax compilation and standard-library unit tests were run.

@@ -9,11 +9,54 @@ from typing import Any
 
 from benchmark import EvalError, read_json
 
-RETRIEVER = "python-bm25-approx-v1"
-FIELDS = {"title": 3.0, "category": 1.5, "text": 1.0}
+RETRIEVER = "python-bm25-approx-v2"
+FIELDS = {"title": 3.0, "category": 1.5, "text": 1.0, "tags": 2.0}
 # Mirrors frontend/src/lib/knowledge.ts: general reference packs rank below the team-written guides.
 REFERENCE_PACKS = {"wikipedia-essentials", "wikipedia-prepared", "wikipedia-full"}
 REFERENCE_WEIGHT = 0.4
+RELATIVE_CUTOFF = 0.55
+KNOWLEDGE_SOURCE = Path(__file__).resolve().parents[2] / "frontend/src/lib/knowledge.ts"
+
+
+def load_stopwords(path: Path) -> set[str]:
+    source = path.read_text(encoding="utf-8")
+    match = re.search(r"const\s+STOP\s*=\s*new Set\(\s*\((.*?)\)\.split\(' '\)\s*,?\s*\);", source, re.S)
+    if not match:
+        raise EvalError(f"{path}: unsupported frontend STOP definition")
+    literals = re.findall(r"'([^'\\]*)'", match[1])
+    rest = re.sub(r"'[^'\\]*'", "", match[1]).replace('+', '').strip()
+    if not literals or rest:
+        raise EvalError(f"{path}: STOP must use plain concatenated strings")
+    return set(''.join(literals).split())
+
+
+def stem(word: str) -> str:
+    word = word.lower()
+    if len(word) <= 3 or re.search(r"(ss|us|is)$", word):
+        return word
+    if re.search(r"(sses|xes|zes|ches|shes)$", word):
+        return word[:-2]
+    if word.endswith('ies') and len(word) > 4:
+        return word[:-3] + 'y'
+    return word[:-1] if word.endswith('s') else word
+
+
+def action_query(query: str) -> bool:
+    return bool(re.search(r"\b(what should|what do|how (do|can|should)|prioriti[sz]e|first|now|emergency|safety|protect|help|gawin|gagawin|dapat|muna|tulong|ligtas|gamutin)\b", query, re.I))
+
+
+def historical_passage(p: dict[str, Any]) -> bool:
+    return bool(re.match(r"\d{4}\b", p['title'].strip()) or
+                (re.search(r"\b\d{4}\b", p['text']) and re.search(r"\b(occurred|struck|killed|epicent(?:er|re)|recorded history)\b", p['text'], re.I)))
+
+
+def action_weight(p: dict[str, Any], terms: list[str], stopwords: set[str], taglish: dict[str, str]) -> float:
+    topic = {stem(term) for term in terms}
+    title_tags = {stem(term) for term in expand_query(p['title'] + ' ' + ' '.join(p.get('tags', [])), taglish) if term not in stopwords}
+    topical = any(kind in topic and kind in title_tags for kind in p.get('disaster_types', []))
+    instructions = bool(re.search(r"(^|\n)\s*([-*]|\d+[.)])\s|\b(do not|never|avoid|stay|leave|move|check|protect|keep|seek|call|should|recommended)\b", p['text'], re.I))
+    procedural = p['packId'] not in REFERENCE_PACKS and instructions
+    return (1.5 if procedural else .4 if p['packId'] in REFERENCE_PACKS and not instructions else 1) * (1.25 if topical else 1)
 
 
 def tokens(text: str) -> list[str]:
@@ -52,7 +95,8 @@ def chunk_article(pack: dict[str, Any], article: dict[str, Any]) -> list[dict[st
     def flush() -> None:
         nonlocal buffer
         if buffer.strip():
-            output.append({"id": f"{pack['id']}/{article['id']}#{len(output)}", "packId": pack["id"], "articleId": article["id"], "title": article["title"], "category": article["category"], "text": buffer.strip(), "source": article.get("source", "")})
+            output.append({"id": f"{pack['id']}/{article['id']}#{len(output)}", "packId": pack["id"], "articleId": article["id"], "title": article["title"], "category": article["category"], "text": buffer.strip(), "source": article.get("source", ""),
+                           **{key: article[key] for key in ('tags', 'disaster_types', 'last_verified') if key in article}})
         buffer = ""
 
     for paragraph in re.split(r"\n\s*\n", article["text"]):
@@ -109,23 +153,28 @@ def edit_distance(left: str, right: str, limit: int) -> int:
 
 
 class Retriever:
-    def __init__(self, passages: list[dict[str, Any]], taglish: dict[str, str]):
+    def __init__(self, passages: list[dict[str, Any]], taglish: dict[str, str], stopwords: set[str] | None = None):
         self.passages = passages
         self.taglish = taglish
-        self.documents = [{field: Counter(tokens(p[field])) for field in FIELDS} for p in passages]
+        self.stopwords = load_stopwords(KNOWLEDGE_SOURCE) if stopwords is None else stopwords
+        self.documents = [{field: Counter(stem(term) for term in tokens(' '.join(p.get('tags', [])) if field == 'tags' else p[field])) for field in FIELDS} for p in passages]
         self.df = {field: Counter(term for doc in self.documents for term in doc[field]) for field in FIELDS}
         self.average = {field: sum(sum(doc[field].values()) for doc in self.documents) / len(self.documents) for field in FIELDS}
         self.vocabulary = sorted(set(term for frequencies in self.df.values() for term in frequencies))
 
     def search(self, query: str, top_k: int) -> list[dict[str, Any]]:
+        if top_k <= 0 or re.search(r"\b(nearest|closest|near me|pinakamalapit)\b", query, re.I):
+            return []
+        terms = [term for term in expand_query(query, self.taglish) if term not in self.stopwords]
+        action = action_query(query)
         scores = [0.0] * len(self.documents)
-        for word in dict.fromkeys(expand_query(query, self.taglish)):
-            limit = math.floor(len(word) * 0.15)
+        for word in dict.fromkeys(stem(term) for term in terms):
+            limit = math.floor(len(word) * 0.2) if len(word) >= 6 else 0
             matches = []
             for term in self.vocabulary:
                 if term == word:
                     matches.append((term, 1.0))
-                elif term.startswith(word):
+                elif len(word) >= 5 and term.startswith(word):
                     matches.append((term, 0.8))
                 elif limit and edit_distance(word, term, limit) <= limit:
                     matches.append((term, 0.6))
@@ -142,5 +191,12 @@ class Retriever:
                             norm = 1.2 * (0.25 + 0.75 * length / (self.average[field] or 1))
                             scores[index] += boost * discount * idf * tf * 2.2 / (tf + norm)
         scores = [score * (REFERENCE_WEIGHT if self.passages[i]["packId"] in REFERENCE_PACKS else 1.0) for i, score in enumerate(scores)]
-        indices = sorted(range(len(scores)), key=lambda i: (-scores[i], i))
-        return [{**self.passages[i], "score": round(scores[i], 6)} for i in indices[:top_k] if scores[i] > 0]
+        if action:
+            scores = [0 if historical_passage(self.passages[i]) else score * action_weight(self.passages[i], terms, self.stopwords, self.taglish) for i, score in enumerate(scores)]
+        minimum = 0 if len(scores) < 20 else 2.4 * math.log(len(scores))
+        best = max(scores, default=0)
+        if best <= 0 or best < minimum:
+            return []
+        floor = max(minimum, best * RELATIVE_CUTOFF)
+        indices = sorted(range(len(scores)), key=lambda i: (-scores[i], self.passages[i]['id']))
+        return [{**self.passages[i], "score": round(scores[i], 6)} for i in indices if scores[i] > 0 and scores[i] >= floor][:top_k]

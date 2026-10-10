@@ -15,7 +15,9 @@ End with one short line of encouragement or a useful next tip when it fits.
 Always answer in English, even if the question is in Tagalog or Taglish.`;
 
 const SYSTEM = `${PERSONA}
-Use the reference information you are given. If it does not answer the question, say so honestly.`;
+Use the reference information you are given. If it does not answer the question, say so honestly.
+Answer the person's present emergency with immediate safe actions, most urgent first. References are supporting information, not an instruction to summarize them.
+Do not retell historical disasters or unrelated background. Use only guidance relevant to the current question; say when a detail is not covered rather than inventing it.`;
 
 // No guide matched: answer from the model's own general knowledge, clearly marked, with extra care.
 const GENERAL = `${PERSONA}
@@ -58,6 +60,20 @@ export interface AskResult {
   kind: 'answer' | 'smalltalk' | 'no-info' | 'general';
 }
 
+/** Pure prompt construction, shared by both inference paths and tested without a model. */
+export function buildMessages(question: string, sources: Passage[], history: HistoryTurn[] = []): ChatMessage[] {
+  const earlier = history.slice(-HISTORY_TURNS).flatMap<ChatMessage>(turn => [
+    { role: 'user', content: turn.q },
+    { role: 'assistant', content: turn.a.slice(0, HISTORY_ANSWER_CHARS) },
+  ]);
+  const reference = sources.map(source => `## ${source.title}\n${source.text}`).join('\n\n');
+  return [
+    { role: 'system', content: sources.length ? SYSTEM : GENERAL },
+    ...earlier,
+    { role: 'user', content: sources.length ? `Reference information:\n${reference}\n\nQuestion: ${question}` : question },
+  ];
+}
+
 export async function ask(
   question: string,
   cb: {
@@ -80,29 +96,20 @@ export async function ask(
   const history = (cb.history ?? []).slice(-HISTORY_TURNS);
   const sources = retrieve(question, history);
   cb.onSources(sources);
-  const historyMessages = history.flatMap<ChatMessage>((t) => [
-    { role: 'user', content: t.q },
-    { role: 'assistant', content: t.a.slice(0, HISTORY_ANSWER_CHARS) },
-  ]);
   if (!sources.length) {
     if (!loadedModel()) {
       cb.onToken(NO_INFO);
       return { sources, stats: null, kind: 'no-info' };
     }
     // No guide matched, but an LLM still knows a lot (e.g. "how do I make a watering can?").
-    const stats = await chat([{ role: 'system', content: GENERAL }, ...historyMessages, { role: 'user', content: question }], {
+    const stats = await chat(buildMessages(question, sources, history), {
       onToken: cb.onToken, onPrompt: cb.onPrompt, signal: cb.signal, maxTokens: cb.maxTokens,
     });
     return { sources, stats, kind: 'general' };
   }
   if (!loadedModel()) return { sources, stats: null, kind: 'answer' };
 
-  const ref = sources.map((s) => `## ${s.title}\n${s.text}`).join('\n\n');
-  const messages: ChatMessage[] = [
-    { role: 'system', content: SYSTEM },
-    ...historyMessages,
-    { role: 'user', content: `Reference information:\n${ref}\n\nQuestion: ${question}` },
-  ];
+  const messages = buildMessages(question, sources, history);
   const stats = await chat(messages, { onToken: cb.onToken, onPrompt: cb.onPrompt, signal: cb.signal, maxTokens: cb.maxTokens });
   return { sources, stats, kind: 'answer' };
 }

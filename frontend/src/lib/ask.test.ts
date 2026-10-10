@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { beforeAll, describe, expect, it } from 'vitest';
-import { ask, NO_INFO, retrieve, type HistoryTurn } from './ask';
-import { indexPacks, search, type Pack } from './knowledge';
+import { ask, buildMessages, NO_INFO, retrieve, type HistoryTurn } from './ask';
+import { historicalPassage, indexPacks, search, searchTerms, type Pack } from './knowledge';
 
 // The real, built packs: these tests guard the "hello gives random survival tips" bug.
 beforeAll(() => {
@@ -16,6 +16,34 @@ const run = async (q: string, history: HistoryTurn[] = []) => {
 };
 
 describe('search relevance (real packs)', () => {
+  it('prioritizes present earthquake actions for a Taglish earthquake/power-loss question', () => {
+    const q = 'may lindol at walang kuryente. ano muna ang dapat naming gawin';
+    const hits = search(q);
+    expect(hits.length).toBeGreaterThan(0);
+    expect(hits.length).toBeLessThan(3);
+    expect(hits[0].articleId).toBe('earthquake-duck-cover-and-hold');
+    expect(hits[0].text).toMatch(/DUCK|COVER|HOLD|After shaking/);
+    expect(hits.some(historicalPassage)).toBe(false);
+    expect(searchTerms(q)).toContain('power');
+    expect(searchTerms(q)).not.toContain('naming');
+  });
+  it('returns actionable references for an English earthquake/power-loss request', () => {
+    const hits = search('What should I prioritize after an earthquake if electricity is unavailable?');
+    expect(hits.length).toBeGreaterThan(0);
+    expect(hits.length).toBeLessThan(3);
+    expect(hits[0].articleId).toBe('earthquake-duck-cover-and-hold');
+    expect(hits.some(p => /aftershocks|battery radio|injuries/i.test(p.text))).toBe(true);
+    expect(hits.some(historicalPassage)).toBe(false);
+  });
+  it('does not send earthquake context for a burn question or fill weak results to three', () => {
+    const hits = search('Paano gamutin ang paso?');
+    expect(hits[0].articleId).toBe('burns');
+    expect(hits.some(p => /earthquake/i.test(p.title))).toBe(false);
+    expect(search('qzxv blorf zzz')).toEqual([]);
+  });
+  it('preserves historical lookup when the question is actually about an event', () => {
+    expect(search('Tell me about the 1990 Luzon earthquake')[0].articleId).toBe('1990-luzon-earthquake');
+  });
   it('finds nothing for greetings, chit-chat and off-topic questions', () => {
     for (const q of ['hello', 'hello po', 'hi', 'how are you', 'what is your name', 'tell me a joke', 'what is the capital of France', 'bitcoin price', 'nearest hospital']) {
       expect(search(q), q).toEqual([]);
@@ -35,6 +63,27 @@ describe('search relevance (real packs)', () => {
   });
   it('does not confuse flood with food', () => {
     expect(search('ano gagawin pag may baha')[0].articleId).toBe('flood-safety');
+  });
+});
+
+describe('production prompt construction without inference', () => {
+  it('grounds the current emergency in the filtered references instead of summarizing history', () => {
+    const question = 'may lindol at walang kuryente. ano muna ang dapat naming gawin';
+    const sources = retrieve(question);
+    const messages = buildMessages(question, sources);
+    expect(messages[0].role).toBe('system');
+    expect(messages[0].content).toContain('present emergency');
+    expect(messages[0].content).toContain('Do not retell historical disasters');
+    expect(messages.at(-1)?.content).toContain(question);
+    for (const source of sources) expect(messages.at(-1)?.content).toContain(source.text);
+    expect(messages.at(-1)?.content).not.toMatch(/1990 Luzon|2013 Bohol/);
+  });
+  it('keeps the existing cautious general-knowledge path when no reference matches', () => {
+    const messages = buildMessages('qzxv blorf zzz', []);
+    expect(messages[0].content).toContain('None of the downloaded survival guides');
+    expect(messages[0].content).toContain('If you are not sure');
+    expect(messages.at(-1)?.content).toBe('qzxv blorf zzz');
+    expect(messages.at(-1)?.content).not.toContain('Reference information:');
   });
 });
 

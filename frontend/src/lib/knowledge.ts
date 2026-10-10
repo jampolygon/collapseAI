@@ -69,6 +69,17 @@ const TAGLISH: Record<string, string> = {
   bagyo: 'typhoon storm',
   baha: 'flood',
   lindol: 'earthquake',
+  kuryente: 'electricity power',
+  brownout: 'power outage',
+  walang: '',
+  nawalan: '',
+  muna: '',
+  dapat: '',
+  gawin: '',
+  gagawin: '',
+  namin: '',
+  naming: '',
+  natin: '',
   bulkan: 'volcano ash',
   abo: 'ash volcano',
   silungan: 'shelter',
@@ -105,7 +116,7 @@ const STOP = new Set(
   ('a an the and or but if of to in on at by for with from about as is are was were be been am i me my we our you your ' +
     'he she it its they them their this that these those what which who whom how when where why do does did doing done ' +
     'can could should would will shall may might must have has had having get got some someone somebody something any ' +
-    'there here very just so not no yes please help need want know tell make po ho opo naman lang din rin kasi').split(' '),
+    'there here very just so not no yes please help need want know tell make without unavailable prioritize prioritise po ho opo naman lang din rin kasi').split(' '),
 );
 
 /** Very small plural stemmer so "wounds"/"fires" match "wound"/"fire". */
@@ -127,6 +138,24 @@ export function searchTerms(q: string): string[] {
 
 /** Packs that are general reference material: they rank below the hand-written guides. */
 const REFERENCE_PACKS = new Set(['wikipedia-essentials', 'wikipedia-prepared', 'wikipedia-full']);
+
+/** Prefer instructions when someone asks what to do, without changing history searches. */
+export const isActionQuery = (query: string) => /\b(what should|what do|how (do|can|should)|prioriti[sz]e|first|now|emergency|safety|protect|help|gawin|gagawin|dapat|muna|tulong|ligtas|gamutin)\b/i.test(query);
+
+export function historicalPassage(p: Passage): boolean {
+  return /^\d{4}\b/.test(p.title.trim()) ||
+    (/\b\d{4}\b/.test(p.text) && /\b(occurred|struck|killed|epicent(?:er|re)|recorded history)\b/i.test(p.text));
+}
+
+export function actionWeight(p: Passage, terms: string[]): number {
+  const topic = new Set(terms.map(stem));
+  const topical = (p.disaster_types ?? []).some(type => topic.has(type) &&
+    searchTerms(`${p.title} ${(p.tags ?? []).join(' ')}`).some(term => stem(term) === type));
+  // Broad Wikipedia disaster tags alone must not turn an event into safety guidance.
+  const instructions = /(^|\n)\s*([-*]|\d+[.)])\s|\b(do not|never|avoid|stay|leave|move|check|protect|keep|seek|call|should|recommended)\b/i.test(p.text);
+  const procedural = !REFERENCE_PACKS.has(p.packId) && instructions;
+  return (procedural ? 1.5 : REFERENCE_PACKS.has(p.packId) && !instructions ? 0.4 : 1) * (topical ? 1.25 : 1);
+}
 
 let index: MiniSearch<Passage> | null = null;
 let passages = new Map<string, Passage>();
@@ -212,7 +241,7 @@ export function indexPacks(packs: Pack[]): { passages: number; articles: number 
 export const loadedPacks = () => loaded;
 
 /** A hit must score at least this share of the best hit, or it is treated as unrelated. */
-const RELATIVE_CUTOFF = 0.35;
+const RELATIVE_CUTOFF = 0.55;
 /**
  * ...and the best hit must reach a minimum score (one stray word is not an answer). Scores grow with
  * the library size, so the floor does too: about 10 for the 61 passages of the default packs.
@@ -224,14 +253,18 @@ export function search(query: string, k = 3): Passage[] {
   if (isLocationQuestion(query)) return []; // "where" questions belong to Map/Compass, not the library
   const terms = searchTerms(query);
   if (!terms.length) return [];
-  const results = index.search(terms.join(' '), { combineWith: 'OR' });
+  const action = isActionQuery(query);
+  const results = index.search(terms.join(' '), { combineWith: 'OR' })
+    .map(result => ({ passage: passages.get(result.id as string)!, score: result.score }))
+    .filter(result => result.passage && (!action || !historicalPassage(result.passage)))
+    .map(result => ({ ...result, score: result.score * (action ? actionWeight(result.passage, terms) : 1) }))
+    .sort((a, b) => b.score - a.score || a.passage.id.localeCompare(b.passage.id));
   if (!results.length || results[0].score < minScore()) return [];
-  const floor = results[0].score * RELATIVE_CUTOFF;
+  const floor = Math.max(minScore(), results[0].score * RELATIVE_CUTOFF);
   return results
     .filter((r) => r.score >= floor)
     .slice(0, k)
-    .map((r) => passages.get(r.id as string)!)
-    .filter(Boolean);
+    .map(r => r.passage);
 }
 
 export function allArticles(): (Article & { packId: string })[] {

@@ -63,27 +63,62 @@ def load_questions(path: Path) -> list[dict[str, Any]]:
     return data
 
 
-def production_prompt(path: Path) -> str:
+def production_prompt(path: Path, name: str = "SYSTEM") -> str:
+    """Resolve known template constants/bare ${NAME} references, never execute TS."""
     try:
         source = path.read_text(encoding="utf-8")
     except OSError as exc:
         raise EvalError(f"Cannot read production prompt {path}: {exc}") from exc
-    match = re.search(r"const\s+SYSTEM\s*=\s*`([^`]+)`\s*;", source)
-    if not match or "${" in match[1] or "\\" in match[1]:
-        raise EvalError(f"{path}: SYSTEM is no longer a plain template literal; use --prompt with a UTF-8 text file")
-    return match[1]
+    def fail(detail: str):
+        raise EvalError(f"{path}: unsupported frontend prompt {name}: {detail}; expected template constants and bare ${{NAME}} references, or use --prompt")
+
+    def resolve(identifier: str, stack: tuple[str, ...]) -> str:
+        if identifier in stack or len(stack) >= 20:
+            fail(f"cyclic or excessive composition at {identifier}")
+        declarations = list(re.finditer(rf"^[ \t]*(?:export\s+)?const\s+{re.escape(identifier)}\s*=\s*", source, re.M))
+        if len(declarations) != 1:
+            fail(f"missing or duplicate constant {identifier}")
+        cursor = declarations[0].end()
+        if cursor >= len(source) or source[cursor] != '`':
+            fail(f"{identifier} must be a template literal")
+        cursor += 1
+        output = []
+        escapes = {"n": "\n", "r": "\r", "t": "\t", "\\": "\\", "`": "`", "$": "$"}
+        while cursor < len(source):
+            char = source[cursor]
+            if char == '`':
+                if not source[cursor + 1:].lstrip().startswith(';'):
+                    fail(f"expression after {identifier}'s template")
+                return ''.join(output)
+            if char == '\\':
+                cursor += 1
+                if cursor >= len(source) or source[cursor] not in escapes:
+                    fail(f"unsupported escape in {identifier}")
+                output.append(escapes[source[cursor]])
+            elif source.startswith('${', cursor):
+                end = source.find('}', cursor + 2)
+                reference = source[cursor + 2:end].strip() if end >= 0 else ''
+                if not re.fullmatch(r"[A-Za-z_]\w*", reference):
+                    fail(f"unsupported interpolation in {identifier}")
+                output.append(resolve(reference, (*stack, identifier)))
+                cursor = end
+            else:
+                output.append(char)
+            cursor += 1
+        fail(f"unterminated template {identifier}")
+
+    return resolve(name, ())
 
 
-def build_messages(system: str, question: str, references: list[dict[str, Any]], rag: bool) -> list[dict[str, str]]:
-    if rag:
+def build_messages(system: str, question: str, references: list[dict[str, Any]], rag: bool,
+                   general_system: str | None = None) -> list[dict[str, str]]:
+    if rag and references:
         reference_text = "\n\n".join(f"## {p['title']}\n{p['text']}" for p in references)
-        if not reference_text:
-            # Matches the current fallback in frontend/src/lib/ask.ts. Kept explicit
-            # because extracting the surrounding TS control flow would be brittle.
-            reference_text = "No reference found. Give only safe, general advice and say that you are not sure."
         user = f"Reference information:\n{reference_text}\n\nQuestion: {question}"
     else:
         user = question
+        if general_system is not None:
+            system = general_system
     return [{"role": "system", "content": system}, {"role": "user", "content": user}]
 
 

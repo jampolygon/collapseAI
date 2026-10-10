@@ -218,11 +218,12 @@ def base_result(question: dict[str, Any], model: str, references: list[dict[str,
 
 
 def evaluate_question(client: Client, question: dict[str, Any], model: str, request_model: str, system: str,
-                      retriever: Retriever | None, args: argparse.Namespace, kwargs: dict[str, Any] | None) -> dict[str, Any]:
+                      retriever: Retriever | None, args: argparse.Namespace, kwargs: dict[str, Any] | None,
+                      general_system: str | None = None) -> dict[str, Any]:
     start = time.perf_counter()
     references = retriever.search(question["question"], args.top_k) if retriever else []
     row = base_result(question, model, references, not args.no_rag)
-    row["messages"] = build_messages(system, question["question"], references, not args.no_rag)
+    row["messages"] = build_messages(system, question["question"], references, not args.no_rag, general_system)
     payload = {"model": request_model, "messages": row["messages"], "temperature": args.temperature,
                "max_tokens": args.max_tokens, "seed": args.seed, "stream": False}
     if kwargs is not None:
@@ -347,6 +348,7 @@ def run(args: argparse.Namespace) -> int:
     questions = load_questions(args.questions)
     prompt_path = args.prompt or ROOT / "frontend/src/lib/ask.ts"
     system = args.prompt.read_text(encoding="utf-8-sig").strip() if args.prompt else production_prompt(prompt_path)
+    general_system = system if args.prompt else production_prompt(prompt_path, "GENERAL")
     if not system:
         raise EvalError("System prompt is empty")
     retriever = None
@@ -363,7 +365,8 @@ def run(args: argparse.Namespace) -> int:
     report: dict[str, Any] = {"schema_version": 1, "created_at": timestamp.isoformat(), "interrupted": False,
         "config": {"rag": not args.no_rag, "retriever": RETRIEVER if retriever else "none", "top_k": args.top_k,
                    "questions_path": str(args.questions.resolve()), "questions_sha256": digest(args.questions),
-                   "system_prompt": system, "prompt_path": str(prompt_path.resolve()), "prompt_sha256": digest(prompt_path),
+                   "system_prompt": system, "general_system_prompt": general_system,
+                   "prompt_path": str(prompt_path.resolve()), "prompt_sha256": digest(prompt_path),
                    "knowledge_source_sha256": digest(ROOT / "frontend/src/lib/knowledge.ts") if retriever else None,
                    "packs": [{"path": str(path.resolve()), "sha256": digest(path)} for path in pack_files],
                    "temperature": args.temperature, "seed": args.seed, "max_tokens": args.max_tokens,
@@ -385,7 +388,7 @@ def run(args: argparse.Namespace) -> int:
                 kwargs = kwargs_override if kwargs_override is not None else {"enable_thinking": False} if "qwen3.5" in identity.lower() or "qwen35" in identity.lower() else None
                 model_report["chat_template_kwargs"] = kwargs
                 for question in questions:
-                    row = evaluate_question(client, question, label, request_model, system, retriever, args, kwargs)
+                    row = evaluate_question(client, question, label, request_model, system, retriever, args, kwargs, general_system)
                     model_report["results"].append(row)
                     save_report(report, destination)
                     print(f"{label}: {question['id']} {'ERROR' if row['error'] else 'PASS' if row['passed'] else 'FAIL'} ({display(row['total_latency_s'], 's')})", flush=True)

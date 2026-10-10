@@ -104,6 +104,9 @@ class InputTests(unittest.TestCase):
     def test_prompt_extraction_tracks_frontend_and_rejects_interpolation(self):
         system = benchmark.production_prompt(run_eval.ROOT / "frontend/src/lib/ask.ts")
         self.assertIn("Always answer in English", system)
+        self.assertIn("present emergency", system)
+        self.assertNotIn("${PERSONA}", system)
+        self.assertIn("None of the downloaded survival guides", benchmark.production_prompt(run_eval.ROOT / "frontend/src/lib/ask.ts", "GENERAL"))
         with tempfile.TemporaryDirectory() as directory:
             path = Path(directory) / "ask.ts"
             path.write_text("const SYSTEM = `updated prompt`;", encoding="utf-8")
@@ -111,6 +114,23 @@ class InputTests(unittest.TestCase):
             path.write_text("const SYSTEM = `changed ${value}`;", encoding="utf-8")
             with self.assertRaises(benchmark.EvalError):
                 benchmark.production_prompt(path)
+
+    def test_prompt_composition_resolves_known_constants_and_literal_escapes(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "ask.ts"
+            path.write_text('const PERSONA = `Warm`;\nconst RULES = `${PERSONA}\\nSafe`;\nexport const SYSTEM = `${RULES} steps`;\nconst GENERAL = `${PERSONA} uncertain`;', encoding="utf-8")
+            self.assertEqual(benchmark.production_prompt(path), "Warm\nSafe steps")
+            self.assertEqual(benchmark.production_prompt(path, "GENERAL"), "Warm uncertain")
+
+    def test_prompt_changes_fail_clearly_without_executing_expressions(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "ask.ts"
+            for source in ['const SYSTEM = `${runCode()}`;', 'const SYSTEM = `${PERSONA}`;\nconst PERSONA = `${SYSTEM}`;',
+                           'const SYSTEM = `a` + `b`;', 'const SYSTEM = importedPrompt;',
+                           'const SYSTEM = `a`;\nconst SYSTEM = `b`;']:
+                path.write_text(source, encoding="utf-8")
+                with self.subTest(source=source), self.assertRaisesRegex(benchmark.EvalError, "unsupported frontend prompt"):
+                    benchmark.production_prompt(path)
 
     def test_rules_alternatives_regex_unicode_and_truncation(self):
         q = {**question(), "must_include": [{"any_of": ["help", "aid"]}, {"regex": r"\b36\s+liters\b"}], "must_not_include": ["danger"]}
@@ -120,6 +140,25 @@ class InputTests(unittest.TestCase):
 
 
 class RetrievalTests(unittest.TestCase):
+    def test_emergency_ranking_tracks_real_earthquake_and_power_loss_cases(self):
+        passages, _ = retrieval.load_packs(run_eval.ROOT / "frontend/public/packs")
+        engine = retrieval.Retriever(passages, retrieval.load_taglish(run_eval.ROOT / "frontend/src/lib/knowledge.ts"))
+        for query in ["may lindol at walang kuryente. ano muna ang dapat naming gawin", "What should I prioritize after an earthquake if electricity is unavailable?"]:
+            hits = engine.search(query, 3)
+            with self.subTest(query=query):
+                self.assertTrue(hits)
+                self.assertEqual(hits[0]['articleId'], 'earthquake-duck-cover-and-hold')
+                self.assertFalse(any(retrieval.historical_passage(p) for p in hits))
+                self.assertLessEqual(len(hits), 3)
+
+    def test_unrelated_and_weak_queries_do_not_receive_earthquake_context(self):
+        passages, _ = retrieval.load_packs(run_eval.ROOT / "frontend/public/packs")
+        engine = retrieval.Retriever(passages, retrieval.load_taglish(run_eval.ROOT / "frontend/src/lib/knowledge.ts"))
+        burns = engine.search('Paano gamutin ang paso?', 3)
+        self.assertTrue(burns)
+        self.assertEqual(burns[0]['articleId'], 'burns')
+        self.assertFalse(any('earthquake' in p['title'].lower() for p in burns))
+        self.assertEqual(engine.search('qzxv blorf zzz', 3), [])
     def test_taglish_mapping_and_real_bleeding_search(self):
         mapping = retrieval.load_taglish(run_eval.ROOT / "frontend/src/lib/knowledge.ts")
         self.assertEqual(retrieval.expand_query("Paano ang sugat at dugo?", mapping), ["wound", "cut", "bleeding", "at", "blood", "bleeding"])
@@ -145,7 +184,9 @@ class RetrievalTests(unittest.TestCase):
         messages = benchmark.build_messages("system", "question", passages[:1], True)
         self.assertIn("Reference information:\n##", messages[1]["content"])
         self.assertEqual(benchmark.build_messages("system", "question", [], False)[1]["content"], "question")
-        self.assertIn("No reference found", benchmark.build_messages("system", "question", [], True)[1]["content"])
+        fallback = benchmark.build_messages("system", "question", [], True, "general")
+        self.assertEqual(fallback, [{"role": "system", "content": "general"}, {"role": "user", "content": "question"}])
+        self.assertEqual(benchmark.build_messages("system", "question", [], False, "general"), fallback)
 
 
 class ProtocolTests(unittest.TestCase):
