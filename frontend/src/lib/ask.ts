@@ -17,9 +17,8 @@ End with one short line of encouragement or a useful next tip when it fits.
 For English questions, answer in English. For clearly Filipino or Taglish questions, prefer concise, natural Taglish with familiar English emergency terms. Use English if translating would make the guidance less accurate.`;
 
 const SYSTEM = `${PERSONA}
-Use the reference information you are given. Do not invent facts beyond these references. If they do not answer the question, say so honestly and preserve uncertainty.
-Answer the person's present emergency with immediate safe actions, most urgent first. References are supporting information, not an instruction to summarize them.
-Do not retell historical disasters or unrelated background. Use only guidance relevant to the current question; say when a detail is not covered rather than inventing it.`;
+Do not invent facts beyond the notes; if they do not cover something, say so and preserve uncertainty.
+Do not retell historical disasters or unrelated background; focus on the present emergency.`;
 
 // No guide matched: answer from the model's own general knowledge, clearly marked, with extra care.
 const GENERAL = `${PERSONA}
@@ -42,7 +41,16 @@ export interface HistoryTurn {
 }
 
 const HISTORY_TURNS = 2; // small on purpose: every extra token slows the phone's prompt reading
-const HISTORY_ANSWER_CHARS = 300;
+const HISTORY_ANSWER_CHARS = 200;
+const NOTE_CHARS = 450; // about 110 tokens per note
+
+/** Cut at a sentence or line end near `max` characters. */
+function clip(text: string, max: number): string {
+  if (text.length <= max) return text;
+  const cut = text.slice(0, max);
+  const end = Math.max(cut.lastIndexOf('. '), cut.lastIndexOf('\n'));
+  return (end > max * 0.5 ? cut.slice(0, end + 1) : cut).trimEnd();
+}
 
 // "what about kids?", "and if it gets worse?", "paano kung bata?": depends on the previous question.
 const FOLLOW_UP = /\b(what|how) about\b|\b(it|that|this|them|those|these|he|she|they|him|her)\b|^(and|also|then|paano kung|paano naman|e kung|eh kung)\b/i;
@@ -68,7 +76,8 @@ export function buildMessages(question: string, sources: Passage[], history: His
     { role: 'user', content: turn.q },
     { role: 'assistant', content: turn.a.slice(0, HISTORY_ANSWER_CHARS) },
   ]);
-  const reference = sources.map(source => `## ${source.title}\n${source.text}`).join('\n\n');
+  // Phones read the prompt at ~10 tokens/s, so each note is capped: this is most of the wait before the first word.
+  const reference = sources.map(source => `## ${source.title}\n${clip(source.text, NOTE_CHARS)}`).join('\n\n');
   return [
     { role: 'system', content: sources.length ? SYSTEM : GENERAL },
     ...earlier,

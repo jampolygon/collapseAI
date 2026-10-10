@@ -77,7 +77,7 @@ describe('production prompt construction without inference', () => {
       expect(system).not.toMatch(/Yes, that is correct|Good idea|Based on the above information/i);
       expect(system).not.toContain(question); // No question-specific canned instructions.
     }
-    expect(buildMessages(question, retrieve(question))[0].content).toContain('Do not invent facts beyond these references');
+    expect(buildMessages(question, retrieve(question))[0].content).toContain('Do not invent facts beyond the notes');
     expect(buildMessages(question, retrieve(question))[0].content).toContain('preserve uncertainty');
   });
   it('prefers simple Taglish where reliable and English for English questions', () => {
@@ -98,7 +98,7 @@ describe('production prompt construction without inference', () => {
     expect(messages[0].content).toContain('present emergency');
     expect(messages[0].content).toContain('Do not retell historical disasters');
     expect(messages.at(-1)?.content).toContain(question);
-    for (const source of sources) expect(messages.at(-1)?.content).toContain(source.text);
+    for (const source of sources) expect(messages.at(-1)?.content).toContain(source.text.slice(0, 200));
     expect(messages.at(-1)?.content).not.toMatch(/1990 Luzon|2013 Bohol/);
   });
   it('keeps the existing cautious general-knowledge path when no reference matches', () => {
